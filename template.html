@@ -1,0 +1,3375 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#fff8ec" />
+    <title>星轨手账</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Zpix by SolidZORO; see the project license for educational-use terms. */
+      @font-face {
+        font-family: "Zpix";
+        src: url("assets/zpix.woff2") format("woff2");
+        font-style: normal;
+        font-weight: 100 900;
+        font-display: swap;
+      }
+
+      :root {
+        color-scheme: light;
+        font-family: "Zpix", "Microsoft YaHei", "PingFang SC", monospace;
+        font-synthesis: none;
+        -webkit-font-smoothing: none;
+        text-rendering: geometricPrecision;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+        border-radius: 0 !important;
+      }
+
+      button {
+        image-rendering: pixelated;
+      }
+
+      input,
+      textarea,
+      select {
+        border-width: 2px !important;
+        border-color: #75b7a5 !important;
+        box-shadow: 2px 2px 0 #263b43;
+      }
+
+      .storybook-shadow {
+        box-shadow: 4px 4px 0 #263b43;
+      }
+
+      .star-lit {
+        background-color: #f7b733;
+        filter: drop-shadow(2px 2px 0 rgb(110 80 28 / 45%));
+      }
+
+      .star-dim {
+        background-color: #d7d2ca;
+      }
+
+      .progress-star {
+        display: inline-block;
+        width: 14px;
+        height: 14px;
+        clip-path: polygon(38% 0, 62% 0, 62% 25%, 88% 25%, 88% 38%, 100% 38%, 100% 62%, 75% 62%, 75% 75%, 62% 75%, 62% 100%, 38% 100%, 38% 75%, 25% 75%, 25% 62%, 0 62%, 0 38%, 25% 38%, 25% 25%, 38% 25%);
+        image-rendering: pixelated;
+      }
+
+      .vn-character {
+        right: 7%;
+        bottom: -40%;
+        left: auto;
+        width: auto;
+        height: 140%;
+        max-width: 88vw;
+        max-height: 900px;
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+        transition: opacity 750ms ease, transform 750ms cubic-bezier(0.2, 0.8, 0.2, 1);
+        filter: drop-shadow(4px 4px 0 rgb(20 31 44 / 30%));
+        image-rendering: pixelated;
+      }
+
+      #endingCg {
+        opacity: 0;
+        transition: opacity 700ms ease;
+        pointer-events: none;
+      }
+
+      #endingCg.is-visible {
+        opacity: 1;
+      }
+
+      #endingCgImage {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        image-rendering: pixelated;
+      }
+
+      .vn-character.is-visible {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        animation: star-drift 4s ease-in-out infinite;
+      }
+
+      @keyframes star-drift {
+        0%, 100% { translate: 0 0; }
+        50% { translate: 0 -7px; }
+      }
+
+      .vn-dialogue {
+        height: clamp(180px, 25vh, 250px);
+        min-height: 180px;
+        max-height: 250px;
+        padding: 10px 14px;
+        color: #1d3038;
+        background: #f9fff8;
+        border: 4px solid #74bca7;
+        box-shadow: 4px 4px 0 #253943;
+        backdrop-filter: none;
+      }
+
+      .vn-dialogue.vn-dialogue-expanded {
+        height: clamp(230px, 33vh, 340px);
+        min-height: 230px;
+        max-height: 340px;
+      }
+
+      .vn-dialogue #speakerName {
+        padding: 0;
+        color: #356b62;
+        font-size: 14px;
+        line-height: 1.4;
+        letter-spacing: 0;
+        background: transparent;
+        border: 0;
+      }
+
+      .vn-dialogue #dialogueText {
+        color: #1d3038;
+        padding-block: 8px;
+        font-size: 24px;
+        line-height: 2;
+        overflow: hidden;
+      }
+
+      .vn-dialogue #dialogueText .stage-direction {
+        color: #638278;
+      }
+
+      .vn-dialogue #stageAction {
+        color: #527b70;
+        max-height: 100%;
+        overflow-y: auto;
+        padding: 8px 4px;
+        font-size: 20px;
+        line-height: 2;
+      }
+
+      .vn-dialogue #inputHint,
+      .vn-dialogue #interactionStatus {
+        color: #426c62;
+      }
+
+      .vn-dialogue #childInput {
+        color: #1d3038;
+        background: #fff;
+      }
+
+      .vn-dialogue #childInput::placeholder {
+        color: #668078;
+      }
+
+      .vn-dialogue #speakButton,
+      .vn-dialogue #replayButton,
+      .vn-dialogue #dialogueHistoryButton,
+      .vn-dialogue #speechSpeedButton {
+        color: #244b46;
+        background: #d7eee3;
+        border: 2px solid #75b7a5;
+        box-shadow: 2px 2px 0 #263b43;
+      }
+
+      .vn-dialogue #sendButton {
+        background: #f4cb69;
+        border: 2px solid #986d24;
+        box-shadow: 2px 2px 0 #263b43;
+      }
+
+      .vn-dialogue #scriptContinue {
+        color: #386e62;
+      }
+
+      #choicePanel {
+        bottom: calc(clamp(180px, 25vh, 250px) + 2.5rem);
+        max-height: 38%;
+        overflow-y: auto;
+      }
+
+      #choicePanel button {
+        padding: 10px 14px;
+        color: #21343a;
+        background: #f9fff8;
+        border: 3px solid #74bca7;
+        box-shadow: 4px 4px 0 #253943;
+        font-size: 16px;
+        line-height: 1.5;
+        text-shadow: none;
+      }
+
+      #prologueWeekPicker option,
+      #weekPicker option {
+        color: #f8fafc;
+        background: #182431;
+      }
+
+      #setupModal {
+        color: #182431;
+      }
+
+      #settingsModal,
+      #settingsModal label,
+      #settingsModal p,
+      #settingsModal span,
+      #settingsModal button,
+      #settingsModal select,
+      #settingsModal input {
+        color: #182431;
+      }
+
+      #settingsModal button,
+      #settingsModal select,
+      #settingsModal input {
+        color: #182431 !important;
+      }
+
+      #settingsModal #apiStatus {
+        color: #182431;
+      }
+
+      #setupModal p,
+      #setupModal label,
+      #setupModal legend,
+      #setupModal span {
+        color: #182431 !important;
+      }
+
+      #setupModal input::placeholder {
+        color: #61716e;
+        opacity: 1;
+      }
+
+      #setupModal #setupStatus {
+        color: #9f1239 !important;
+        background: #fff1f2;
+      }
+
+      #setupModal #setupApiSettings {
+        color: #263b43;
+        background: #fff;
+      }
+
+      #setupModal #startStoryButton {
+        color: #182431;
+        background: #f4cb69;
+        border: 2px solid #986d24;
+        box-shadow: 2px 2px 0 #263b43;
+      }
+
+      #safetyPanel {
+        border-radius: 0 !important;
+        box-shadow: 4px 4px 0 #253943;
+      }
+
+      #endingBanner {
+        border: 0;
+        background: transparent;
+        box-shadow: none;
+        backdrop-filter: none;
+        text-shadow: 2px 2px 3px rgb(0 0 0 / 75%);
+      }
+
+      .pixel-card,
+      #setupModal section,
+      #settingsModal section,
+      #sparkOptionsModal section,
+      #storyCardModal section {
+        border-radius: 0 !important;
+        box-shadow: 4px 4px 0 #263b43;
+      }
+
+      .vn-continue {
+        animation: continue-blink 1.15s ease-in-out infinite;
+      }
+
+      @keyframes continue-blink {
+        0%, 100% { opacity: 0.35; }
+        50% { opacity: 1; }
+      }
+
+      .scene-dim::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: rgb(7 13 27 / 38%);
+        pointer-events: none;
+        transition: background 500ms ease;
+      }
+
+      .typing-dots {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        min-height: 20px;
+      }
+
+      .typing-dots span {
+        width: 7px;
+        height: 7px;
+        border-radius: 9999px;
+        background: #d69a50;
+        animation: typing-bounce 1.15s infinite ease-in-out;
+      }
+
+      .typing-dots span:nth-child(2) {
+        animation-delay: 0.16s;
+      }
+
+      .typing-dots span:nth-child(3) {
+        animation-delay: 0.32s;
+      }
+
+      @keyframes typing-bounce {
+        0%, 60%, 100% {
+          transform: translateY(0);
+          opacity: 0.55;
+        }
+        30% {
+          transform: translateY(-6px);
+          opacity: 1;
+        }
+      }
+
+      .modal-backdrop {
+        background: rgb(38 32 27 / 42%);
+        backdrop-filter: blur(7px);
+      }
+
+      @media (max-width: 700px) {
+        .scene-label {
+          display: none;
+        }
+
+        .vn-character {
+          right: 1%;
+          bottom: -36%;
+          height: 128%;
+          max-width: 120vw;
+        }
+
+        .vn-dialogue {
+          height: clamp(180px, 25vh, 220px);
+          min-height: 180px;
+          max-height: 220px;
+          padding: 8px 10px;
+        }
+
+        .vn-dialogue.vn-dialogue-expanded {
+          height: 32vh;
+          min-height: 220px;
+          max-height: 290px;
+        }
+
+        #choicePanel {
+          bottom: calc(clamp(180px, 25vh, 220px) + 2.5rem);
+          max-height: 40%;
+        }
+
+        .vn-dialogue #dialogueText {
+          font-size: 18px;
+          line-height: 2;
+        }
+
+        .vn-dialogue #stageAction {
+          font-size: 16px;
+          line-height: 2;
+        }
+      }
+
+      @media print {
+        body {
+          overflow: visible !important;
+          background: #fff !important;
+        }
+
+        body > main,
+        body > #setupModal,
+        body > #settingsModal,
+        body > #sparkOptionsModal {
+          display: none !important;
+        }
+
+        #storyCardModal {
+          position: static !important;
+          display: block !important;
+          overflow: visible !important;
+          padding: 0 !important;
+          background: #fff !important;
+          backdrop-filter: none !important;
+        }
+
+        #storyCardModal > section {
+          max-height: none !important;
+          max-width: none !important;
+          overflow: visible !important;
+          border: 0 !important;
+          box-shadow: none !important;
+        }
+
+        #closeStoryCard,
+        #storyCardStatus,
+        #saveStoryCard,
+        #printStoryCard {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="h-screen w-screen overflow-hidden bg-slate-950 text-stone-100">
+    <main class="relative flex h-screen w-screen flex-col overflow-hidden bg-slate-950">
+      <div
+        id="sceneBackground"
+        class="absolute inset-0 scale-[1.03] bg-cover bg-center transition-[background-image] duration-700"
+        aria-hidden="true"
+      ></div>
+      <div id="sceneShade" class="absolute inset-0 bg-slate-950/10 transition-colors duration-500" aria-hidden="true"></div>
+
+      <header class="relative z-20 flex min-h-[64px] flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-slate-950/65 px-3 py-2 backdrop-blur-md sm:min-h-[72px] sm:px-6">
+        <div class="flex min-w-0 items-center gap-2">
+          <label class="flex min-w-0 items-center gap-2 rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs text-white/80 sm:text-sm">
+            <span class="hidden whitespace-nowrap sm:inline">章节</span>
+            <select id="weekPicker" class="min-w-0 max-w-[130px] cursor-pointer bg-transparent font-semibold text-white outline-none sm:max-w-[180px]" aria-label="切换周次"></select>
+          </label>
+          <button
+            id="newStoryButton"
+            type="button"
+            class="shrink-0 rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/20 sm:px-3 sm:text-sm"
+          >
+            <span class="hidden sm:inline">重新开始</span><span class="sm:hidden">重开</span>
+          </button>
+        </div>
+
+        <div class="flex items-center gap-1.5 sm:gap-2">
+          <div class="flex shrink-0 items-center gap-0.5 rounded-xl border border-white/15 bg-white/10 px-2 py-1.5 sm:gap-1 sm:px-3" aria-label="故事进度">
+          <span class="progress-star star-dim" aria-label="第1颗星，未点亮"></span>
+          <span class="progress-star star-dim" aria-label="第2颗星，未点亮"></span>
+          <span class="progress-star star-dim" aria-label="第3颗星，未点亮"></span>
+          <span class="progress-star star-dim" aria-label="第4颗星，未点亮"></span>
+          <span class="progress-star star-dim" aria-label="第5颗星，未点亮"></span>
+          <span class="progress-star star-dim" aria-label="第6颗星，未点亮"></span>
+          </div>
+          <button id="openSettings" type="button" class="rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/20 sm:text-sm" aria-haspopup="dialog">设置</button>
+          <button id="saveGameButton" type="button" class="rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/20 sm:text-sm" title="管理多个存档">存档</button>
+          <button id="loadGameButton" type="button" class="rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/20 sm:text-sm" title="读取已保存的游戏进度">读档</button>
+          <button id="exportExperimentLog" type="button" class="rounded-xl border border-white/15 bg-white/10 px-2.5 py-2 text-xs font-bold text-white transition hover:bg-white/20 sm:text-sm">日志</button>
+        </div>
+      </header>
+      <div id="saveLoadStatus" class="fixed right-3 top-[76px] z-[60] hidden max-w-[min(90vw,420px)] border-2 border-emerald-200 bg-slate-950/90 px-4 py-3 text-sm text-white shadow-xl backdrop-blur-md" role="status" aria-live="polite"></div>
+
+      <div id="saveSlotsModal" class="modal-backdrop fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="saveSlotsTitle">
+        <section class="storybook-shadow my-auto max-h-[90vh] w-full max-w-xl overflow-y-auto border-2 border-emerald-300 bg-[#f9fff8] p-5 text-slate-900 sm:p-7">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="saveSlotsTitle" class="text-xl font-black text-emerald-900 sm:text-2xl">故事存档</h2>
+              <p class="mt-1 text-sm text-slate-600">可保存多个进度；读档会替换当前进度。</p>
+            </div>
+            <button id="closeSaveSlots" type="button" class="border-2 border-slate-300 bg-white px-3 py-1 text-slate-800" aria-label="关闭存档管理">关闭</button>
+          </div>
+          <form id="createSaveSlotForm" class="mt-5 flex flex-col gap-2 sm:flex-row">
+            <label for="saveSlotName" class="sr-only">新存档名称</label>
+            <input id="saveSlotName" type="text" maxlength="40" placeholder="输入存档名称，例如：第1周结束" class="min-w-0 flex-1 border-2 border-emerald-300 bg-white px-3 py-2 text-sm text-slate-900" />
+            <button type="submit" class="border-2 border-emerald-800 bg-emerald-700 px-4 py-2 text-sm font-bold text-white">保存新档</button>
+          </form>
+          <p id="saveSlotsStatus" class="mt-2 hidden text-sm text-rose-700" role="status"></p>
+          <div id="saveSlotsList" class="mt-4 max-h-[52vh] space-y-3 overflow-y-auto"></div>
+        </section>
+      </div>
+
+      <div id="dialogueHistoryModal" class="modal-backdrop fixed inset-0 z-[70] hidden items-center justify-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="dialogueHistoryTitle">
+        <section class="storybook-shadow my-auto max-h-[90vh] w-full max-w-2xl overflow-y-auto border-2 border-emerald-300 bg-[#f9fff8] p-5 text-slate-900 sm:p-7">
+          <div class="flex items-start justify-between gap-3">
+            <div>
+              <h2 id="dialogueHistoryTitle" class="text-xl font-black text-emerald-900 sm:text-2xl">对话历史</h2>
+              <p class="mt-1 text-sm text-slate-600">按故事发生顺序查看已播放的剧情和聊天内容。</p>
+            </div>
+            <button id="closeDialogueHistory" type="button" class="border-2 border-slate-300 bg-white px-3 py-1 text-slate-800" aria-label="关闭对话历史">关闭</button>
+          </div>
+          <div id="dialogueHistoryList" class="mt-5 max-h-[68vh] space-y-3 overflow-y-auto"></div>
+        </section>
+      </div>
+
+      <div id="nextWeekModal" class="modal-backdrop fixed inset-0 z-[80] hidden items-center justify-center overflow-y-auto p-4" role="dialog" aria-modal="true" aria-labelledby="nextWeekTitle">
+        <section class="storybook-shadow my-auto w-full max-w-md border-2 border-emerald-300 bg-[#f9fff8] p-6 text-center text-slate-900 sm:p-8">
+          <h2 id="nextWeekTitle" class="text-xl font-black text-emerald-900 sm:text-2xl">即将进入下一周</h2>
+          <p class="mt-3 text-sm leading-7 text-slate-700 sm:text-base">准备好继续故事了吗？</p>
+          <div class="mt-6 flex justify-center gap-3">
+            <button id="confirmNextWeek" type="button" class="border-2 border-emerald-800 bg-emerald-700 px-6 py-2.5 text-sm font-bold text-white shadow-[3px_3px_0_#263b43]">好</button>
+            <button id="waitNextWeek" type="button" class="border-2 border-slate-400 bg-white px-6 py-2.5 text-sm font-bold text-slate-800 shadow-[3px_3px_0_#263b43]">再等等</button>
+          </div>
+        </section>
+      </div>
+
+      <section id="storyStage" class="scene-dim relative z-10 flex min-h-0 flex-1 items-center justify-center overflow-hidden bg-cover bg-center transition-[background-image] duration-700">
+        <div id="endingCg" class="absolute inset-0 z-[5] hidden opacity-0" aria-hidden="true">
+          <img id="endingCgImage" alt="" />
+        </div>
+        <img id="characterSprite" src="男生素材/静止站立.png" alt="小星" class="vn-character absolute z-[2] object-contain" onerror="handleSpriteError(this)" />
+        <div id="choicePanel" class="absolute bottom-[31%] left-1/2 z-10 hidden w-[min(90%,620px)] -translate-x-1/2 flex-col gap-3"></div>
+        <div id="endingBanner" class="absolute left-1/2 top-[18%] z-10 hidden w-[min(90%,760px)] -translate-x-1/2 bg-transparent px-5 py-4 text-center text-base font-bold leading-relaxed text-amber-100 sm:text-xl" role="status"></div>
+        <div id="safetyPanel" class="absolute inset-x-4 top-[18%] z-20 mx-auto hidden max-w-xl rounded-3xl border-2 border-rose-300 bg-rose-950/95 p-5 text-center text-white shadow-2xl sm:p-7" role="alert">
+          <h2 class="text-xl font-black text-rose-100 sm:text-2xl">先暂停一下</h2>
+          <p id="safetyMessage" class="mt-3 leading-relaxed"></p>
+          <p class="mt-4 rounded-2xl bg-white px-4 py-3 text-lg font-black text-rose-800 sm:text-2xl">全国心理援助热线：12356</p>
+          <p class="mt-2 text-sm text-rose-100">如果眼前有危险，请马上告诉身边可信任的大人或老师。</p>
+          <button id="safetyOkButton" type="button" class="mt-4 border-2 border-rose-100 bg-white px-8 py-2 font-bold text-rose-900 shadow-[3px_3px_0_#431b2b]">OK</button>
+        </div>
+
+        <section id="dialoguePanel" class="vn-dialogue absolute inset-x-2 bottom-2 z-10 flex cursor-pointer flex-col sm:inset-x-6 sm:bottom-4" aria-live="polite" aria-label="视觉小说对话框">
+          <div class="flex items-center justify-between gap-2">
+            <span id="speakerName" class="text-sm font-extrabold tracking-wide"></span>
+            <div class="flex items-center gap-1.5" onclick="event.stopPropagation()">
+              <button id="speakButton" type="button" class="rounded-lg bg-emerald-500/90 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-400 sm:text-sm" aria-label="朗读最新台词">朗读</button>
+              <button id="replayButton" type="button" class="rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-white/20 sm:text-sm" aria-label="重播最新台词">重播</button>
+              <button id="dialogueHistoryButton" type="button" class="rounded-lg bg-emerald-500/90 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-emerald-400 sm:text-sm" aria-haspopup="dialog">历史</button>
+              <button id="speechSpeedButton" type="button" class="rounded-lg bg-white/10 px-2.5 py-1.5 text-xs font-bold text-white hover:bg-white/20" aria-label="切换语速">1×</button>
+            </div>
+          </div>
+          <p id="stageAction" class="mt-2 hidden text-sm italic leading-relaxed text-amber-100/70"></p>
+          <div id="dialogueText" class="mt-3 min-h-0 flex-1 overflow-y-auto whitespace-pre-wrap text-base leading-relaxed text-white sm:mt-4 sm:text-xl sm:leading-8" aria-atomic="true"></div>
+          <div id="gameControls" class="mt-2 hidden shrink-0" onclick="event.stopPropagation()">
+            <p id="inputHint" class="mb-2 text-xs leading-relaxed text-amber-100/80 sm:text-sm"></p>
+            <form id="messageForm" class="flex items-end gap-2">
+              <button id="sparkButton" type="button" class="h-10 shrink-0 border border-violet-200/30 bg-violet-400/20 px-2 text-sm text-violet-100 transition hover:bg-violet-400/35 disabled:cursor-wait disabled:opacity-50" aria-label="灵感嘴替" title="灵感嘴替">扩写</button>
+              <label for="childInput" class="sr-only">写下回应</label>
+              <textarea id="childInput" rows="1" maxlength="1200" placeholder="写下你想说的话……" class="max-h-20 min-h-10 flex-1 resize-none rounded-xl border border-white/20 bg-slate-950/60 px-3 py-2 text-sm leading-relaxed text-white outline-none placeholder:text-white/45 focus:border-amber-200/70 sm:text-base"></textarea>
+              <button id="sendButton" type="submit" class="h-10 shrink-0 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 px-4 text-sm font-extrabold text-slate-950 shadow-md transition hover:brightness-110 disabled:cursor-wait disabled:opacity-60">发送</button>
+            </form>
+            <div class="mt-2 flex items-center justify-between gap-2">
+              <button id="generateCardButton" type="button" class="hidden rounded-xl bg-gradient-to-r from-fuchsia-400 to-amber-300 px-3 py-2 text-xs font-extrabold text-slate-950 shadow-lg sm:text-sm">解锁今日星轨手账卡</button>
+              <button id="nextWeekButton" type="button" class="hidden rounded-xl border border-white/25 bg-white/10 px-3 py-2 text-xs font-bold text-white hover:bg-white/20 sm:text-sm">进入下一周 →</button>
+              <span id="interactionStatus" class="ml-auto min-h-4 text-right text-[10px] text-white/70 sm:text-xs" role="status"></span>
+            </div>
+          </div>
+          <div id="scriptContinue" class="vn-continue mt-2 self-end text-xs font-bold text-amber-100/80">点击继续</div>
+        </section>
+
+        <form id="hiddenLegacyMessageForm" class="hidden" aria-hidden="true"></form>
+      </section>
+    </main>
+
+    <div
+      id="sparkOptionsModal"
+      class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="sparkOptionsTitle"
+    >
+      <section class="storybook-shadow my-auto max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[2rem] border border-white bg-[#fffdf8] p-5 sm:p-7">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <h2 id="sparkOptionsTitle" class="text-xl font-black text-violet-900 sm:text-2xl">选一句喜欢的话</h2>
+            <p class="mt-1 text-sm leading-relaxed text-stone-500">这些只是表达小帮手，可以选一句再改改，也可以继续用自己的话。</p>
+          </div>
+          <button id="closeSparkOptions" type="button" class="rounded-full bg-stone-100 px-3 py-1.5 text-lg text-stone-600 hover:bg-stone-200" aria-label="关闭扩写选项">✕</button>
+        </div>
+        <div id="sparkOptionsList" class="space-y-3"></div>
+        <p id="sparkOptionsStatus" class="mt-3 hidden rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800" role="status"></p>
+      </section>
+    </div>
+
+    <div
+      id="storyCardModal"
+      class="modal-backdrop fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="storyCardHeading"
+    >
+      <section class="storybook-shadow my-auto max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white bg-[#fffdf8] p-5 sm:rounded-[2.5rem] sm:p-8">
+        <div class="mb-4 flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs font-bold uppercase tracking-widest text-rose-500">STORYSPARK · 今日的故事</p>
+            <h2 id="storyCardHeading" class="mt-1 text-2xl font-black text-amber-900 sm:text-3xl">正在点亮故事卡…</h2>
+          </div>
+          <button id="closeStoryCard" type="button" class="rounded-full bg-stone-100 px-3 py-1.5 text-lg text-stone-600 hover:bg-stone-200" aria-label="关闭故事卡">✕</button>
+        </div>
+        <article class="rounded-[1.8rem] border border-amber-100 bg-gradient-to-br from-amber-50 via-rose-50 to-violet-50 p-5 sm:p-7">
+          <p id="storyCardScene" class="mb-3 inline-flex rounded-full bg-white/80 px-3 py-1 text-xs font-bold text-amber-800"></p>
+          <p id="storyCardBody" class="whitespace-pre-wrap text-base leading-8 text-stone-700 sm:text-lg"></p>
+          <div class="mt-5 border-t border-rose-200/70 pt-4">
+            <p class="text-xs font-bold text-rose-700">我发现的闪光点</p>
+            <p id="storyCardReflection" class="mt-1 whitespace-pre-wrap text-sm leading-6 text-stone-700 sm:text-base"></p>
+          </div>
+          <p id="storyCardEncouragement" class="mt-4 text-sm font-bold leading-6 text-violet-800 sm:text-base"></p>
+        </article>
+        <p id="storyCardStatus" class="mt-3 hidden rounded-xl px-3 py-2 text-sm" role="status"></p>
+        <div class="mt-4 flex flex-wrap justify-end gap-2">
+          <button id="saveStoryCard" type="button" class="rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-amber-600">保存故事卡</button>
+          <button id="printStoryCard" type="button" class="rounded-xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-700 transition hover:bg-stone-50">打印 / 保存为 PDF</button>
+        </div>
+      </section>
+    </div>
+
+    <div
+      id="setupModal"
+      class="modal-backdrop fixed inset-0 z-40 hidden items-center justify-center overflow-y-auto p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="setupTitle"
+    >
+      <section class="storybook-shadow my-auto max-h-[94vh] w-full max-w-2xl overflow-y-auto rounded-[2rem] border border-white bg-[#fffdf8] p-5 sm:rounded-[2.5rem] sm:p-8">
+        <div class="mb-5 text-center">
+          <h2 id="setupTitle" class="text-2xl font-black text-amber-900 sm:text-3xl">序章 · 开始新的星轨</h2>
+          <p class="mt-2 text-sm leading-relaxed text-stone-500">给你的搭子取个名字，再选一个想进入的周次。</p>
+        </div>
+        <form id="setupForm" class="space-y-4">
+          <fieldset>
+            <legend class="mb-1.5 block text-sm font-bold text-stone-700">选择故事伙伴</legend>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3 transition has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50">
+                <input type="radio" name="character" value="boy" checked class="accent-amber-500" />
+                <span class="text-sm font-bold text-stone-700">男生</span>
+              </label>
+              <label class="flex cursor-pointer items-center gap-3 rounded-2xl border border-stone-200 bg-white p-3 transition has-[:checked]:border-amber-400 has-[:checked]:bg-amber-50">
+                <input type="radio" name="character" value="girl" class="accent-amber-500" />
+                <span class="text-sm font-bold text-stone-700">女生</span>
+              </label>
+            </div>
+          </fieldset>
+          <div>
+            <label for="partnerNameInput" class="mb-1.5 block text-sm font-bold text-stone-700">请给你的平行时空新搭子取个名字吧</label>
+            <input id="partnerNameInput" type="text" maxlength="24" required placeholder="小星" class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+          </div>
+          <div>
+            <label for="childNickname" class="mb-1.5 block text-sm font-bold text-stone-700">请告诉我们你想被叫什么</label>
+            <input id="childNickname" type="text" maxlength="24" required placeholder="小明" class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-base outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+          </div>
+          <div>
+            <label for="prologueWeekPicker" class="mb-1.5 block text-sm font-bold text-stone-700">选择要进入的周次</label>
+            <select id="prologueWeekPicker" class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100"></select>
+          </div>
+          <p id="setupStatus" class="hidden rounded-2xl bg-rose-50 px-4 py-3 text-sm text-rose-800" role="status" aria-live="polite"></p>
+          <button id="setupApiSettings" type="button" class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-600 transition hover:bg-stone-50">
+            需要先配置 API？打开设置
+          </button>
+          <div class="grid grid-cols-2 gap-3">
+            <button id="setupSaveGameButton" type="button" class="rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-600 transition hover:bg-stone-50">存档</button>
+            <button id="setupLoadGameButton" type="button" class="rounded-2xl border border-stone-200 bg-white px-4 py-2.5 text-sm font-bold text-stone-600 transition hover:bg-stone-50">读档</button>
+          </div>
+          <button id="startStoryButton" type="submit" class="w-full rounded-2xl bg-gradient-to-r from-amber-400 to-orange-400 px-5 py-3.5 text-base font-extrabold text-white shadow-lg shadow-orange-200 transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-60 sm:rounded-3xl sm:py-4 sm:text-lg">
+            进入故事
+          </button>
+        </form>
+      </section>
+    </div>
+
+    <div
+      id="settingsModal"
+      class="modal-backdrop fixed inset-0 z-30 hidden items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="settingsTitle"
+    >
+      <section class="storybook-shadow max-h-[92vh] w-full max-w-xl overflow-y-auto rounded-[2rem] border border-white bg-[#fffdf8] p-5 sm:p-8">
+        <div class="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 id="settingsTitle" class="text-2xl font-black text-amber-900">API 设置</h2>
+            <p class="mt-1 text-sm leading-relaxed text-stone-500">配置兼容 OpenAI Chat Completions 格式的接口。</p>
+          </div>
+          <button id="closeSettings" type="button" class="rounded-full bg-stone-100 px-3 py-1.5 text-lg text-stone-600 hover:bg-stone-200" aria-label="关闭设置">✕</button>
+        </div>
+
+        <form id="settingsForm" class="space-y-4">
+          <div>
+            <label for="apiBaseUrl" class="mb-1.5 block text-sm font-bold text-stone-700">API Base URL</label>
+            <input id="apiBaseUrl" type="url" autocomplete="url" placeholder="https://api.openai.com/v1" class="w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+            <p class="mt-1 text-xs text-stone-400">可填写基础地址，也可直接填写完整的 /chat/completions 地址。</p>
+          </div>
+
+          <div>
+            <label for="apiKey" class="mb-1.5 block text-sm font-bold text-stone-700">API Key</label>
+            <div class="flex gap-2">
+              <input id="apiKey" type="password" autocomplete="off" placeholder="请输入 API Key" class="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+              <button id="toggleApiKey" type="button" class="rounded-2xl border border-stone-200 bg-white px-3 text-sm font-bold text-stone-600 hover:bg-stone-50" aria-label="显示 API Key">显示</button>
+            </div>
+          </div>
+
+          <div>
+            <label for="modelName" class="mb-1.5 block text-sm font-bold text-stone-700">Model Name</label>
+            <div class="flex flex-col gap-2 sm:flex-row">
+              <select id="modelPicker" aria-label="从模型列表选择" class="min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100">
+                <option value="">先拉取模型，或手动输入模型名</option>
+              </select>
+              <button id="fetchModels" type="button" class="shrink-0 rounded-2xl border-2 border-amber-200 bg-white px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-50 disabled:cursor-wait disabled:opacity-60">拉取模型</button>
+            </div>
+            <input id="modelName" type="text" autocomplete="off" placeholder="也可手动输入，例如 gpt-4o-mini" class="mt-2 w-full rounded-2xl border border-stone-200 bg-white px-4 py-3 text-sm outline-none focus:border-amber-400 focus:ring-4 focus:ring-amber-100" />
+            <p class="mt-1 text-xs text-stone-400">选择上方拉取到的模型，或在此手动填写模型 ID。</p>
+          </div>
+
+          <p class="rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-900">
+            配置和故事数据保存在当前浏览器的本机存储中。导出备份会包含 API Key，请妥善保管；公开部署时不要保存共享密钥。模型列表与聊天接口需要服务端允许浏览器跨域访问（CORS）。
+          </p>
+
+          <section class="rounded-2xl border border-stone-200 bg-white/80 p-4">
+            <h3 class="font-bold text-stone-700">本机数据备份</h3>
+            <p class="mt-1 text-xs leading-relaxed text-stone-500">导出配置、场景、进度和聊天记录为 JSON 文件；之后可从文件导入恢复。</p>
+            <div class="mt-3 flex flex-wrap gap-2">
+              <button id="exportData" type="button" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800 hover:bg-emerald-100">导出本机数据</button>
+              <button id="importData" type="button" class="rounded-xl border border-sky-200 bg-sky-50 px-4 py-2 text-sm font-bold text-sky-800 hover:bg-sky-100">导入备份文件</button>
+              <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+            </div>
+          </section>
+
+          <div id="apiStatus" class="hidden rounded-2xl px-4 py-3 text-sm leading-relaxed" role="status" aria-live="polite"></div>
+          <div class="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+            <button id="testConnection" type="button" class="rounded-2xl border-2 border-amber-200 bg-white px-5 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-50 disabled:cursor-wait disabled:opacity-60">
+              测试连接
+            </button>
+            <button type="submit" class="rounded-2xl bg-amber-500 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-amber-600">
+              保存配置
+            </button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <script>
+      "use strict";
+
+      const STORAGE_KEY = "storyspark.apiConfig";
+      const DATA_STORAGE_KEY = "storyspark.localData";
+      const sceneBackground = document.getElementById("sceneBackground");
+      const weekPicker = document.getElementById("weekPicker");
+      const characterSprite = document.getElementById("characterSprite");
+      const settingsModal = document.getElementById("settingsModal");
+      const settingsForm = document.getElementById("settingsForm");
+      const apiStatus = document.getElementById("apiStatus");
+      const interactionStatus = document.getElementById("interactionStatus");
+      const sendButton = document.getElementById("sendButton");
+      let appData = {
+        version: 1,
+        scene: "classroom",
+        stars: 0,
+        messages: [],
+        chatHistory: [],
+        roundCount: 0,
+        sessionState: null,
+        gameState: null,
+        events: [],
+        storyCards: [],
+        dialogueHistory: [],
+      };
+      let sessionState = null;
+      let gameState = createInitialGameState();
+      let chatHistory = [];
+      let roundCount = 0;
+      let returnToSetupAfterSettings = false;
+      let resetProgressOnStart = false;
+      const speechRates = [1, 0.75, 0.5];
+      let speechRateIndex = 0;
+      let currentUtterance = null;
+      let activeStoryCard = null;
+      let eventSessionId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+      function createInitialGameState() {
+        return {
+          phase: "script",
+          week: 1,
+          historySessionId: "",
+          scriptIndex: 0,
+          normalIndex: 0,
+          playerName: "小明",
+          partnerName: "小星",
+          character: "boy",
+          branch: null,
+          freeTurns: 0,
+          started: false,
+          completedWeeks: [],
+          lastLine: null,
+          currentLinePage: "",
+          dialoguePageIndex: 0,
+          safetyResumePhase: "",
+          safetyResumeLine: null,
+          safetyResumePage: "dialogue",
+          safetyResumeDialoguePageIndex: 0,
+          roundStartedAt: 0,
+        };
+      }
+
+      const scenes = {
+        myCustomScene1: {
+          label: "[场景名字，如：黄昏的教室]",
+          image: "[场景图片路径，如：assets/bg1.jpg]",
+          guidance: "[给AI看的背景设定，如：故事发生在无人的教室]"
+        },
+        myCustomScene2: {
+          label: "[场景名字2]",
+          image: "[场景图片路径2]",
+          guidance: "[场景描述2]"
+        }
+      };
+      const characterSprites = {
+        boy: "[男生立绘图片路径，如：assets/boy.png]",
+        girl: "[女生立绘图片路径，如：assets/girl.png]",
+        // 你也可以加自定义名字，比如 miyuki: "assets/miyuki.png"
+      };
+      const WEEKLY_SCRIPTS = {
+        1: {
+          title: "[第一周的主题名字，如：初次相遇]",
+          scene: "myCustomScene1", // 填上面 scenes 里定义好的场景英文名
+          script: [
+            // speaker可以选: me_monologue(旁白), me(玩家), partner(搭子)
+            // emotion可以选: default, happy, sad, angry, surprised, shy
+            { speaker: "me_monologue", text: "[第一句旁白：今天天气很好...]", showPartner: false },
+            { speaker: "partner", action: "（推开门走进来）", text: "[搭子的第一句话]", showPartner: true, emotion: "default" },
+            { speaker: "me", text: "[玩家的固定台词]", showPartner: true }
+          ],
+          // 两个分支选项：第一个(A)进入AI自由互动，第二个(B)进入普通剧情结尾
+          choices: ["[选项A：进入互动，比如‘你想聊点什么？’]", "[选项B：拒绝互动，比如‘我今天想一个人静静’]"],
+
+          // ======== 选择选项A (进入AI互动) 的配置 ========
+          goodIntro: "[选择A后，搭子说的引导语]",
+          inputPlaceholder: "[输入框里给玩家的提示语，如：写下你今天的心情...]",
+          aiGuidance: "[给AI的具体要求，如：扮演一个温柔的学长，鼓励玩家说出心事，每次只问一个小问题。]",
+          targetTurns: 3, // AI互动的轮数（想聊几轮填几）
+          cardTitle: "[通关A结局后，生成的故事卡片名称]",
+          goodEnding: "[A结局的最终旁白描述]",
+
+          // ======== 选择选项B (直接结束) 的配置 ========
+          normalLines: [
+            "[选择B后，搭子失落或体贴的台词1]",
+            "[选择B后，搭子的台词2]"
+          ],
+          normalEnding: "[B结局的最终旁白描述]"
+        },
+
+        // 如果需要第二周、第三周，直接复制上面 "1: { ... }" 的结构，改成 "2: { ... }" 即可
+      };
+      const ENDING_CGS = {
+        1: { // 对应第一周
+          good: { title: "[A结局插画标题]", image: "[A结局图片路径，如：assets/cg_good1.jpg]" },
+          normal: { title: "[B结局插画标题]", image: "[B结局图片路径，如：assets/cg_normal1.jpg]" },
+        }
+        // 第2周就接着加 2: { ... }
+      };
+      const MAX_WEEK = Math.max(...Object.keys(WEEKLY_SCRIPTS).map(Number));
+      const DEFAULT_SCENE = Object.keys(scenes)[0];
+      appData.scene = DEFAULT_SCENE;
+
+      function validateGameState(value) {
+        if (!value || typeof value !== "object") {
+          return null;
+        }
+        const validPhases = new Set(["script", "choice", "freeInput", "normalEnding", "ending", "safety"]);
+        const week = Number(value.week);
+        const completedWeeks = Array.isArray(value.completedWeeks)
+          ? [...new Set(value.completedWeeks.map(Number).filter((number) => Number.isInteger(number) && number >= 1 && number <= MAX_WEEK))]
+          : [];
+        return {
+          phase: validPhases.has(value.phase) ? value.phase : "script",
+          week: Number.isInteger(week) && week >= 1 && week <= MAX_WEEK ? week : 1,
+          historySessionId: typeof value.historySessionId === "string" && value.historySessionId
+            ? value.historySessionId.slice(0, 100)
+            : eventSessionId,
+          scriptIndex: Math.max(0, Math.floor(Number(value.scriptIndex) || 0)),
+          normalIndex: Math.max(0, Math.floor(Number(value.normalIndex) || 0)),
+          playerName: typeof value.playerName === "string" ? value.playerName.slice(0, 24) : "小明",
+          partnerName: typeof value.partnerName === "string" ? value.partnerName.slice(0, 24) : "小星",
+          character: Object.hasOwn(characterSprites, value.character) ? value.character : "boy",
+          branch: value.branch === "A" || value.branch === "B" ? value.branch : null,
+          freeTurns: Math.max(0, Math.floor(Number(value.freeTurns) || 0)),
+          started: value.started === true,
+          roundStartedAt: Math.max(0, Number(value.roundStartedAt) || 0),
+          completedWeeks,
+          currentLinePage: value.currentLinePage === "action" ? "action" : "dialogue",
+          dialoguePageIndex: Math.max(0, Math.floor(Number(value.dialoguePageIndex) || 0)),
+          safetyResumePhase: validPhases.has(value.safetyResumePhase) && value.safetyResumePhase !== "safety"
+            ? value.safetyResumePhase
+            : "",
+          safetyResumePage: value.safetyResumePage === "action" ? "action" : "dialogue",
+          safetyResumeDialoguePageIndex: Math.max(0, Math.floor(Number(value.safetyResumeDialoguePageIndex) || 0)),
+          safetyResumeLine: value.safetyResumeLine && typeof value.safetyResumeLine === "object" ? {
+            speaker: String(value.safetyResumeLine.speaker || "partner"),
+            text: typeof value.safetyResumeLine.text === "string" ? value.safetyResumeLine.text.slice(0, 12000) : "",
+            action: typeof value.safetyResumeLine.action === "string" ? value.safetyResumeLine.action.slice(0, 1000) : "",
+            showPartner: value.safetyResumeLine.showPartner === true,
+          } : null,
+          lastLine: value.lastLine && typeof value.lastLine === "object" ? {
+            speaker: String(value.lastLine.speaker || "partner"),
+            text: typeof value.lastLine.text === "string" ? value.lastLine.text.slice(0, 12000) : "",
+            action: typeof value.lastLine.action === "string" ? value.lastLine.action.slice(0, 1000) : "",
+            showPartner: value.lastLine.showPartner === true,
+          } : null,
+        };
+      }
+
+      function persistGameState() {
+        appData.gameState = gameState;
+        appData.sessionState = sessionState;
+        appData.chatHistory = chatHistory;
+        appData.roundCount = gameState.freeTurns;
+        appData.scene = WEEKLY_SCRIPTS[gameState.week].scene;
+        return persistAppData();
+      }
+
+      function setGameStars() {
+        updateWeekHud();
+      }
+
+      function updateWeekHud() {
+        weekPicker.value = String(gameState.week);
+        appData.stars = gameState.completedWeeks.length;
+        document.querySelectorAll(".progress-star").forEach((star, index) => {
+          const weekNumber = index + 1;
+          const week = WEEKLY_SCRIPTS[weekNumber];
+          star.classList.toggle("hidden", !week);
+          if (!week) return;
+          const weekDone = gameState.completedWeeks.includes(weekNumber);
+          star.classList.toggle("star-lit", weekDone);
+          star.classList.toggle("star-dim", !weekDone);
+          star.setAttribute("aria-label", `第${weekNumber}周，${weekDone ? "已完成" : "未完成"}`);
+          star.title = `第${weekNumber}周${week.title}`;
+        });
+      }
+
+      function applyPhaseVisibility() {
+        const freeInput = gameState.phase === "freeInput";
+        const isScript = gameState.phase === "script";
+        const isNormalEnding = gameState.phase === "normalEnding";
+        const isEnding = gameState.phase === "ending";
+        document.getElementById("gameControls").classList.toggle("hidden", !freeInput && !isEnding);
+        document.getElementById("messageForm").classList.toggle("hidden", !freeInput);
+        document.getElementById("inputHint").classList.toggle("hidden", !freeInput);
+        document.getElementById("scriptContinue").classList.toggle("hidden", !isScript && !isNormalEnding);
+        document.getElementById("choicePanel").classList.toggle("hidden", gameState.phase !== "choice");
+        document.getElementById("choicePanel").classList.toggle("flex", gameState.phase === "choice");
+        document.getElementById("dialoguePanel").classList.toggle("cursor-pointer", isScript || isNormalEnding);
+        document.getElementById("dialoguePanel").classList.toggle("vn-dialogue-expanded", freeInput);
+        document.getElementById("safetyPanel").classList.toggle("hidden", gameState.phase !== "safety");
+        const week = WEEKLY_SCRIPTS[gameState.week];
+        document.getElementById("inputHint").textContent =
+          freeInput && gameState.freeTurns > 0
+            ? `${week.inputPlaceholder}（还可以继续 ${Math.max(0, week.targetTurns - gameState.freeTurns)} 轮）`
+            : week.inputPlaceholder;
+        document.getElementById("childInput").placeholder = week.inputPlaceholder;
+        document.getElementById("nextWeekButton").classList.toggle(
+          "hidden",
+          gameState.phase !== "ending" || gameState.week >= MAX_WEEK,
+        );
+        document.getElementById("generateCardButton").classList.toggle(
+          "hidden",
+          gameState.phase !== "ending" || gameState.branch !== "A",
+        );
+      }
+
+      let typewriterTimer = 0;
+      let typewriterComplete = true;
+      let currentTypewriterText = "";
+      let currentDialoguePages = [];
+
+      function renderInlineStageDirections(text, container) {
+        container.replaceChildren();
+        const parts = text.split(/(（[^）]*）)/g);
+        parts.forEach((part) => {
+          if (!part) return;
+          const node = document.createElement(part.startsWith("（") && part.endsWith("）") ? "em" : "span");
+          node.textContent = part;
+          if (node.tagName === "EM") node.className = "stage-direction";
+          container.append(node);
+        });
+      }
+
+      function paginateDialogueText(text) {
+        const target = document.getElementById("dialogueText");
+        const computed = getComputedStyle(target);
+        const canvas = document.createElement("canvas");
+        const context = canvas.getContext("2d");
+        const fontFamily = computed.fontFamily;
+        const fontWeight = computed.fontWeight;
+        const fontSize = computed.fontSize;
+        if (context) context.font = `${fontWeight} ${fontSize} ${fontFamily}`;
+        const maxWidth = Math.max(1, target.clientWidth - 8);
+        const lines = [];
+        let line = "";
+        let lineWidth = 0;
+
+        Array.from(text || "").forEach((character) => {
+          if (character === "\n") {
+            lines.push(line);
+            line = "";
+            lineWidth = 0;
+            return;
+          }
+          const characterWidth = context
+            ? context.measureText(character).width
+            : Number.parseFloat(fontSize) || 24;
+          if (line && lineWidth + characterWidth > maxWidth) {
+            lines.push(line);
+            line = "";
+            lineWidth = 0;
+          }
+          line += character;
+          lineWidth += characterWidth;
+        });
+        if (line || lines.length === 0) lines.push(line);
+        return lines;
+      }
+
+      function typeDialogue(text) {
+        window.clearInterval(typewriterTimer);
+        currentDialoguePages = paginateDialogueText(text);
+        gameState.dialoguePageIndex = Math.min(
+          gameState.dialoguePageIndex,
+          currentDialoguePages.length - 1,
+        );
+        currentTypewriterText = currentDialoguePages[gameState.dialoguePageIndex] || "";
+        typewriterComplete = false;
+        document.getElementById("scriptContinue").classList.add("hidden");
+        const target = document.getElementById("dialogueText");
+        target.replaceChildren();
+        let index = 0;
+        const characters = Array.from(currentTypewriterText);
+        typewriterTimer = window.setInterval(() => {
+          index += 1;
+          renderInlineStageDirections(characters.slice(0, index).join(""), target);
+          if (index >= characters.length) {
+            window.clearInterval(typewriterTimer);
+            typewriterComplete = true;
+            document.getElementById("scriptContinue").classList.toggle(
+              "hidden",
+              !["script", "normalEnding"].includes(gameState.phase),
+            );
+          }
+        }, 24);
+      }
+
+      function completeTypewriter() {
+        if (typewriterComplete) return false;
+        window.clearInterval(typewriterTimer);
+        renderInlineStageDirections(currentTypewriterText, document.getElementById("dialogueText"));
+        typewriterComplete = true;
+        document.getElementById("scriptContinue").classList.toggle(
+          "hidden",
+          !["script", "normalEnding"].includes(gameState.phase),
+        );
+        return true;
+      }
+
+      function renderGameLine(line, animate = true) {
+        if (!line) return;
+        gameState.lastLine = line;
+        gameState.currentLinePage = line.action ? "action" : "dialogue";
+        gameState.dialoguePageIndex = 0;
+        const speakerName = line.speaker === "me_monologue"
+          ? ""
+          : line.speaker === "me"
+            ? gameState.playerName
+            : gameState.partnerName;
+        document.getElementById("speakerName").textContent = speakerName;
+        const action = document.getElementById("stageAction");
+        if (line.action) {
+          action.textContent = line.action;
+          action.classList.remove("hidden");
+        } else {
+          action.textContent = "";
+          action.classList.add("hidden");
+        }
+        action.classList.toggle("line-page-active", Boolean(line.action));
+        const dialogue = document.getElementById("dialogueText");
+        dialogue.classList.toggle("hidden", Boolean(line.action));
+        const visiblePartner = line.showPartner === true;
+        characterSprite.classList.toggle("is-visible", visiblePartner);
+        document.getElementById("storyStage").classList.toggle("scene-dim", !visiblePartner);
+        document.getElementById("speakButton").setAttribute("aria-label", `朗读${speakerName}的台词`);
+        if (line.action) {
+          window.clearInterval(typewriterTimer);
+          currentTypewriterText = "";
+          dialogue.replaceChildren();
+          typewriterComplete = true;
+          document.getElementById("scriptContinue").classList.toggle(
+            "hidden",
+            !["script", "normalEnding"].includes(gameState.phase),
+          );
+        } else if (animate) {
+          typeDialogue(line.text || "");
+        } else {
+          window.clearInterval(typewriterTimer);
+          currentDialoguePages = paginateDialogueText(line.text || "");
+          gameState.dialoguePageIndex = Math.min(
+            gameState.dialoguePageIndex,
+            currentDialoguePages.length - 1,
+          );
+          currentTypewriterText = currentDialoguePages[gameState.dialoguePageIndex] || "";
+          renderInlineStageDirections(currentTypewriterText, document.getElementById("dialogueText"));
+          typewriterComplete = true;
+          document.getElementById("scriptContinue").classList.toggle(
+            "hidden",
+            !["script", "normalEnding"].includes(gameState.phase),
+          );
+        }
+        applyPhaseVisibility();
+        persistGameState();
+      }
+
+      function renderCurrentScriptLine() {
+        const week = WEEKLY_SCRIPTS[gameState.week];
+        if (gameState.scriptIndex >= week.script.length) {
+          gameState.phase = "choice";
+          renderChoices();
+          document.getElementById("speakerName").textContent = "故事分支";
+          document.getElementById("stageAction").classList.add("hidden");
+          document.getElementById("dialogueText").textContent = "接下来，你想怎么做？";
+          document.getElementById("scriptContinue").classList.add("hidden");
+          applyPhaseVisibility();
+          persistGameState();
+          return;
+        }
+        gameState.phase = "script";
+        renderGameLine(week.script[gameState.scriptIndex]);
+      }
+
+      function restoreLinePage(savedPage, savedDialoguePageIndex = 0) {
+        if (!gameState.lastLine) return;
+        gameState.dialoguePageIndex = savedDialoguePageIndex;
+        if (gameState.lastLine.action && savedPage !== "dialogue") return;
+        gameState.currentLinePage = "dialogue";
+        document.getElementById("stageAction").classList.add("hidden");
+        const dialogue = document.getElementById("dialogueText");
+        dialogue.classList.remove("hidden");
+        currentDialoguePages = paginateDialogueText(gameState.lastLine.text || "");
+        gameState.dialoguePageIndex = Math.min(
+          gameState.dialoguePageIndex,
+          currentDialoguePages.length - 1,
+        );
+        currentTypewriterText = currentDialoguePages[gameState.dialoguePageIndex] || "";
+        renderInlineStageDirections(currentTypewriterText, dialogue);
+        typewriterComplete = true;
+      }
+
+      function renderChoices() {
+        const panel = document.getElementById("choicePanel");
+        panel.replaceChildren();
+        WEEKLY_SCRIPTS[gameState.week].choices.forEach((choice, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "w-full rounded-2xl border border-amber-100/50 bg-slate-950/85 px-5 py-3 text-left text-sm font-bold leading-relaxed text-amber-50 shadow-xl backdrop-blur-md transition hover:-translate-y-0.5 hover:border-amber-200 hover:bg-slate-900 sm:px-6 sm:py-4 sm:text-base";
+          button.textContent = `${index === 0 ? "A" : "B"} · ${choice}`;
+          button.addEventListener("click", () => chooseBranch(index === 0 ? "A" : "B"));
+          panel.append(button);
+        });
+      }
+
+      function addScriptContextToHistory() {
+        const week = WEEKLY_SCRIPTS[gameState.week];
+        const transcript = week.script
+          .map((line) => `${line.speaker === "partner" ? gameState.partnerName : gameState.playerName}: ${line.text}`)
+          .join("\n");
+        chatHistory = [{
+          role: "user",
+          content: `本周已演出的固定剧情（作为上下文，不要复述）：\n${transcript}\n玩家选择了分支 A：${week.choices[0]}`,
+        }];
+      }
+
+      function chooseBranch(branch) {
+        gameState.branch = branch;
+        appendDialogueHistory(
+          "选择",
+          WEEKLY_SCRIPTS[gameState.week].choices[branch === "A" ? 0 : 1],
+          `choice:${gameState.week}`,
+        );
+        recordEvent("weekly_branch_selected", { week: gameState.week, branch });
+        document.getElementById("choicePanel").replaceChildren();
+        document.getElementById("choicePanel").classList.add("hidden");
+        if (branch === "A") {
+          gameState.phase = "freeInput";
+          gameState.freeTurns = 0;
+          addScriptContextToHistory();
+          gameState.lastLine = {
+            speaker: "partner",
+            text: WEEKLY_SCRIPTS[gameState.week].goodIntro,
+            showPartner: true,
+          };
+          appendDialogueHistory(gameState.partnerName, gameState.lastLine.text, `branch:${gameState.week}:intro`);
+          renderGameLine(gameState.lastLine);
+          document.getElementById("childInput").focus();
+          recordEvent("weekly_ai_interaction_started", { week: gameState.week });
+        } else {
+          gameState.phase = "normalEnding";
+          gameState.normalIndex = 0;
+          renderNormalEndingLine();
+        }
+        persistGameState();
+      }
+
+      function renderNormalEndingLine() {
+        const week = WEEKLY_SCRIPTS[gameState.week];
+        if (gameState.normalIndex >= week.normalLines.length) {
+          finishWeek("B");
+          return;
+        }
+        renderGameLine({
+          speaker: "partner",
+          text: week.normalLines[gameState.normalIndex],
+          showPartner: true,
+        });
+        gameState.phase = "normalEnding";
+        applyPhaseVisibility();
+      }
+
+      function finishWeek(branch) {
+        const week = WEEKLY_SCRIPTS[gameState.week];
+        if (!gameState.completedWeeks.includes(gameState.week)) {
+          gameState.completedWeeks.push(gameState.week);
+          gameState.completedWeeks.sort((a, b) => a - b);
+        }
+        gameState.phase = "ending";
+        gameState.branch = branch;
+        showEndingCG();
+        const controls = document.getElementById("gameControls");
+        controls.classList.remove("hidden");
+        document.getElementById("generateCardButton").classList.toggle("hidden", branch !== "A");
+        document.getElementById("nextWeekButton").classList.remove("hidden");
+        document.getElementById("scriptContinue").classList.add("hidden");
+        setGameStars();
+        applyPhaseVisibility();
+        persistGameState();
+        recordEvent("weekly_ending_reached", {
+          week: gameState.week,
+          branch,
+          freeTurns: gameState.freeTurns,
+          endingType: branch === "A" ? "good" : "normal",
+        });
+        scheduleNextWeek();
+      }
+
+      function renderEndingBanner() {
+        const banner = document.getElementById("endingBanner");
+        const endingType = gameState.branch === "A" ? "good" : "normal";
+        const ending = ENDING_CGS[gameState.week]?.[endingType];
+        const title = gameState.week === 6 && endingType === "good"
+          ? `Grand Good Ending · ${ending.title}`
+          : `${endingType === "good" ? "Good" : "Normal"} Ending · ${ending.title}`;
+        const storyText = endingType === "good"
+          ? WEEKLY_SCRIPTS[gameState.week].goodEnding
+          : WEEKLY_SCRIPTS[gameState.week].normalEnding;
+        const titleLine = document.createElement("strong");
+        titleLine.className = "block text-lg font-black sm:text-2xl";
+        titleLine.textContent = title;
+        const storyLine = document.createElement("span");
+        storyLine.className = "mt-2 block text-sm font-medium leading-relaxed sm:text-base";
+        storyLine.textContent = storyText;
+        banner.replaceChildren(titleLine, storyLine);
+        banner.classList.remove("hidden");
+      }
+
+      function handleEndingCgError() {
+        const cgLayer = document.getElementById("endingCg");
+        cgLayer.classList.remove("is-visible");
+        cgLayer.classList.add("hidden");
+        characterSprite.classList.toggle("is-visible", gameState.lastLine?.showPartner === true);
+      }
+
+      function showEndingCG() {
+        const endingType = gameState.branch === "A" ? "good" : "normal";
+        const ending = ENDING_CGS[gameState.week]?.[endingType];
+        const cgLayer = document.getElementById("endingCg");
+        const cgImage = document.getElementById("endingCgImage");
+        renderEndingBanner();
+        characterSprite.classList.remove("is-visible");
+        cgLayer.classList.remove("is-visible");
+        cgLayer.classList.remove("hidden");
+        if (!ending) {
+          cgLayer.classList.add("hidden");
+          return;
+        }
+        cgImage.onerror = handleEndingCgError;
+        cgImage.onload = () => {
+          window.requestAnimationFrame(() => cgLayer.classList.add("is-visible"));
+        };
+        cgImage.src = ending.image;
+        if (cgImage.complete && cgImage.naturalWidth > 0) {
+          window.requestAnimationFrame(() => cgLayer.classList.add("is-visible"));
+        }
+      }
+
+      function hideEndingCG() {
+        const cgLayer = document.getElementById("endingCg");
+        const cgImage = document.getElementById("endingCgImage");
+        cgLayer.classList.remove("is-visible");
+        cgLayer.classList.add("hidden");
+        cgImage.onload = null;
+        cgImage.onerror = null;
+      }
+
+      function preloadEndingCGs() {
+        Object.values(ENDING_CGS).forEach((weekEndings) => {
+          Object.values(weekEndings).forEach((ending) => {
+            const image = new Image();
+            image.src = ending.image;
+          });
+        });
+      }
+
+      let nextWeekTimer = 0;
+
+      function scheduleNextWeek() {
+        window.clearTimeout(nextWeekTimer);
+        if (gameState.phase !== "ending" || gameState.week >= MAX_WEEK) return;
+        interactionStatus.textContent = "你可以决定什么时候继续下一周。";
+        nextWeekTimer = window.setTimeout(() => {
+          nextWeekTimer = 0;
+          if (gameState.phase === "ending" && gameState.week < MAX_WEEK) showNextWeekPrompt();
+        }, 5000);
+      }
+
+      function showNextWeekPrompt() {
+        if (gameState.phase !== "ending" || gameState.week >= MAX_WEEK) return;
+        const modal = document.getElementById("nextWeekModal");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeNextWeekPrompt() {
+        const modal = document.getElementById("nextWeekModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function confirmNextWeek() {
+        if (gameState.phase !== "ending" || gameState.week >= MAX_WEEK) {
+          closeNextWeekPrompt();
+          return;
+        }
+        closeNextWeekPrompt();
+        window.clearTimeout(nextWeekTimer);
+        nextWeekTimer = 0;
+        startWeek(gameState.week + 1);
+      }
+
+      function waitBeforeNextWeek() {
+        closeNextWeekPrompt();
+        scheduleNextWeek();
+      }
+
+      function startWeek(weekNumber) {
+        window.clearTimeout(nextWeekTimer);
+        nextWeekTimer = 0;
+        closeNextWeekPrompt();
+        hideEndingCG();
+        const week = Math.max(1, Math.min(MAX_WEEK, Math.floor(Number(weekNumber) || 1)));
+        gameState.week = week;
+        gameState.phase = "script";
+        gameState.scriptIndex = 0;
+        gameState.normalIndex = 0;
+        gameState.branch = null;
+        gameState.freeTurns = 0;
+        gameState.started = true;
+        gameState.lastLine = null;
+        gameState.currentLinePage = "";
+        gameState.safetyResumePhase = "";
+        gameState.safetyResumeLine = null;
+        gameState.safetyResumePage = "dialogue";
+        gameState.safetyResumeDialoguePageIndex = 0;
+        gameState.roundStartedAt = 0;
+        chatHistory = [];
+        roundCount = 0;
+        sessionState = {
+          nickname: gameState.playerName,
+          partnerName: gameState.partnerName,
+          weekTheme: WEEKLY_SCRIPTS[week].title,
+          scene: WEEKLY_SCRIPTS[week].scene,
+          character: gameState.character,
+          recentEvent: "",
+        };
+        appData.messages = [];
+        appData.chatHistory = [];
+        appData.roundCount = 0;
+        appData.sessionState = sessionState;
+        appData.scene = sessionState.scene;
+        document.getElementById("choicePanel").replaceChildren();
+        document.getElementById("endingBanner").classList.add("hidden");
+        document.getElementById("safetyPanel").classList.add("hidden");
+        setCharacter(gameState.character);
+        setScene(sessionState.scene);
+        updateWeekHud();
+        renderCurrentScriptLine();
+        recordEvent("weekly_script_started", { week, title: WEEKLY_SCRIPTS[week].title });
+        persistGameState();
+      }
+
+      function advanceDialogue() {
+        if (gameState.lastLine?.action && gameState.currentLinePage === "action") {
+          gameState.currentLinePage = "dialogue";
+          gameState.dialoguePageIndex = 0;
+          document.getElementById("stageAction").classList.add("hidden");
+          document.getElementById("dialogueText").classList.remove("hidden");
+          if (gameState.phase === "script" || gameState.phase === "normalEnding") {
+            typeDialogue(gameState.lastLine.text || "");
+          } else {
+            renderInlineStageDirections(gameState.lastLine.text || "", document.getElementById("dialogueText"));
+            typewriterComplete = true;
+          }
+          persistGameState();
+          return;
+        }
+        if (completeTypewriter()) return;
+        if (
+          gameState.currentLinePage === "dialogue" &&
+          gameState.dialoguePageIndex < currentDialoguePages.length - 1
+        ) {
+          gameState.dialoguePageIndex += 1;
+          typeDialogue(gameState.lastLine?.text || "");
+          persistGameState();
+          return;
+        }
+        if (gameState.phase === "script") {
+          const line = gameState.lastLine;
+          if (line) {
+            appendDialogueHistory(
+              line.speaker === "me_monologue" ? "旁白" : line.speaker === "me" ? gameState.playerName : gameState.partnerName,
+              line.text,
+              `script:${gameState.week}:${gameState.scriptIndex}`,
+            );
+          }
+          gameState.scriptIndex += 1;
+          renderCurrentScriptLine();
+          return;
+        }
+        if (gameState.phase === "normalEnding") {
+          const line = gameState.lastLine;
+          if (line) {
+            appendDialogueHistory(
+              line.speaker === "me_monologue" ? "旁白" : line.speaker === "me" ? gameState.playerName : gameState.partnerName,
+              line.text,
+              `normal:${gameState.week}:${gameState.normalIndex}`,
+            );
+          }
+          gameState.normalIndex += 1;
+          renderNormalEndingLine();
+        }
+      }
+
+      function buildWeekInteractionPrompt() {
+        const week = WEEKLY_SCRIPTS[gameState.week];
+        const prompt = [
+          buildStorySystemPrompt(),
+          "接下来的周次活动说明只约束本周任务；上面的倾听、尊重孩子表达和安全规则始终优先。",
+          `你是${gameState.partnerName}，正在与${gameState.playerName}进行第${gameState.week}周“${week.title}”的故事互动。`,
+          `本周互动指导：${week.aiGuidance}`,
+          `这是本周第 ${gameState.freeTurns + 1} 轮互动，目标共 ${week.targetTurns} 轮。`,
+          gameState.week === 3
+            ? `感官搜寻进度：已完成 ${gameState.freeTurns} / 3 个细节。当前轮只聚焦一个细节：${["颜色", "声音", "温度或气味"][gameState.freeTurns] || "收尾记录"}。`
+            : "",
+          gameState.week === 4
+            ? `角色扮演输出请在 rabbit_reply 中先写【同学】的友善回应，换行后再写【${gameState.partnerName}】的具体反馈；不要羞辱或刁难玩家。`
+            : "",
+          "每轮回复自然、简洁、具体，保留玩家说话的口吻，不要催促，不要给诊断或治疗建议。只根据已经发生的对话回应，不编造玩家经历。",
+          "不要在 JSON 字段的文字内容中使用表情符号或 emoji。",
+          "安全规则优先于剧本：如果玩家表达自伤、自杀、被伤害或当前不安全，不继续互动任务，先表达关心并建议联系可信任的大人。不要承诺保密。",
+          "每轮只输出一个严格 JSON 对象，不要 Markdown 或代码围栏。字段必须为：",
+          '{"noticed":"玩家本轮明确说出的事实，尽量沿用原词","mode":"listen|ask|offer|safe","rabbit_emotion":"happy|shy|sad|angry|surprised|default","rabbit_reply":"针对本轮内容的自然回应","ask_emotion_check":false,"question_for_child":"可为空；如需提问只问一个小问题","ready_for_card":false}',
+          "ask_emotion_check 必须固定为 false；noticed 和 mode 可按本轮内容填写，但不可编造事实。",
+        ].filter(Boolean);
+        return prompt.join("\n");
+      }
+
+      function detectSafetySignal(text) {
+        return /(自杀|自残|不想活|想死|死了算了|跳楼|割腕|伤害自己|想消失|被.{0,4}(打|推|踢|伤害|威胁)|打我|霸凌|欺负|威胁|受伤|害怕回家|不敢回家|有人.{0,8}(危险|强迫|逼))/i.test(text);
+      }
+
+      function triggerSafetyAlert(logEvent = true) {
+        window.clearTimeout(nextWeekTimer);
+        nextWeekTimer = 0;
+        closeNextWeekPrompt();
+        hideEndingCG();
+        if (gameState.phase !== "safety") {
+          gameState.safetyResumePhase = gameState.phase;
+          gameState.safetyResumeLine = gameState.lastLine ? { ...gameState.lastLine } : null;
+          gameState.safetyResumePage = gameState.currentLinePage;
+          gameState.safetyResumeDialoguePageIndex = gameState.dialoguePageIndex;
+        }
+        gameState.phase = "safety";
+        const safetyLine = "我先陪你停在这里。你现在的安全最重要，可以马上告诉一位你信任的大人或老师，让TA陪着你一起处理。";
+        gameState.lastLine = { speaker: "partner", text: safetyLine, showPartner: true };
+        document.getElementById("speakerName").textContent = gameState.partnerName;
+        document.getElementById("stageAction").classList.add("hidden");
+        typeDialogue(safetyLine);
+        document.getElementById("safetyMessage").textContent = "谢谢你愿意告诉我。先离开让你不安全的地方，找身边可信任的大人陪着你；如果有立即危险，请联系当地急救或报警服务。";
+        document.getElementById("safetyPanel").classList.remove("hidden");
+        document.getElementById("characterSprite").classList.add("is-visible");
+        document.getElementById("storyStage").classList.remove("scene-dim");
+        document.getElementById("choicePanel").classList.add("hidden");
+        applyPhaseVisibility();
+        if (logEvent) {
+          recordEvent("safety_alert_triggered", { week: gameState.week, freeTurn: gameState.freeTurns + 1 });
+        }
+        persistGameState();
+      }
+
+      function dismissSafetyAlert() {
+        if (gameState.phase !== "safety") return;
+        gameState.phase = gameState.safetyResumePhase || "freeInput";
+        const resumeLine = gameState.safetyResumeLine;
+        const resumePage = gameState.safetyResumePage;
+        const resumeDialoguePageIndex = gameState.safetyResumeDialoguePageIndex;
+        gameState.safetyResumePhase = "";
+        gameState.safetyResumeLine = null;
+        gameState.safetyResumePage = "dialogue";
+        gameState.safetyResumeDialoguePageIndex = 0;
+        document.getElementById("safetyPanel").classList.add("hidden");
+        if (resumeLine) {
+          renderGameLine(resumeLine, false);
+          restoreLinePage(resumePage, resumeDialoguePageIndex);
+        } else {
+          gameState.lastLine = null;
+          applyPhaseVisibility();
+        }
+        if (gameState.phase === "ending") showEndingCG();
+        persistGameState();
+      }
+
+      async function handleGameMessageSubmit(event) {
+        event.preventDefault();
+        if (gameState.phase !== "freeInput" || sendButton.disabled) return;
+        const input = document.getElementById("childInput");
+        const userText = input.value.trim();
+        if (!userText) {
+          interactionStatus.textContent = "写下你想说的话，或使用灵感嘴替。";
+          input.focus();
+          return;
+        }
+        input.value = "";
+        if (detectSafetySignal(userText)) {
+          input.value = userText;
+          triggerSafetyAlert();
+          return;
+        }
+
+        const turnStartedAt = performance.now();
+        gameState.roundStartedAt = Date.now();
+        const sparkButton = document.getElementById("sparkButton");
+        sendButton.disabled = true;
+        sendButton.textContent = "…";
+        sparkButton.disabled = true;
+        interactionStatus.textContent = "正在整理你的回应…";
+        renderGameLine({ speaker: "me", text: userText, showPartner: true });
+        recordEvent("free_input_turn_started", {
+          week: gameState.week,
+          turn: gameState.freeTurns + 1,
+          characterCount: userText.length,
+        });
+        try {
+          const response = await callLLM(
+            buildWeekInteractionPrompt(),
+            [...chatHistory, { role: "user", content: userText }],
+          );
+          chatHistory.push(
+            { role: "user", content: userText },
+            { role: "assistant", content: JSON.stringify(response) },
+          );
+          gameState.freeTurns += 1;
+          roundCount = gameState.freeTurns;
+          const replyText = response.question_for_child
+            ? `${response.rabbit_reply}\n${response.question_for_child}`
+            : response.rabbit_reply;
+          const partnerLine = { speaker: "partner", text: replyText, showPartner: true };
+          appendDialogueHistory(gameState.playerName, userText, `ai:${gameState.week}:${gameState.freeTurns + 1}:user`);
+          appendDialogueHistory(gameState.partnerName, replyText, `ai:${gameState.week}:${gameState.freeTurns + 1}:assistant`);
+          appData.messages.push(
+            { role: "user", content: userText },
+            { role: "assistant", content: replyText },
+          );
+          renderGameLine(partnerLine);
+          const elapsedMs = Math.round(performance.now() - turnStartedAt);
+          recordEvent("free_input_turn_completed", {
+            week: gameState.week,
+            turn: gameState.freeTurns,
+            elapsedMs,
+            characterCount: userText.length,
+          });
+          interactionStatus.textContent = `第 ${gameState.freeTurns} 轮回应完成。`;
+          if (gameState.freeTurns >= WEEKLY_SCRIPTS[gameState.week].targetTurns) {
+            finishWeek("A");
+          } else {
+            document.getElementById("inputHint").textContent =
+              `${WEEKLY_SCRIPTS[gameState.week].inputPlaceholder}（还可以继续 ${WEEKLY_SCRIPTS[gameState.week].targetTurns - gameState.freeTurns} 轮）`;
+            document.getElementById("childInput").focus();
+          }
+          persistGameState();
+        } catch (error) {
+          input.value = userText;
+          input.focus();
+          interactionStatus.textContent = `暂时没有收到回应：${error.message}`;
+          if (error.message.includes("请先填写 API Key")) openSettings();
+        } finally {
+          sendButton.disabled = false;
+          sendButton.textContent = "发送";
+          sparkButton.disabled = false;
+        }
+      }
+
+      function restoreGameState() {
+        window.clearTimeout(nextWeekTimer);
+        closeNextWeekPrompt();
+        roundCount = gameState.freeTurns;
+        document.getElementById("endingBanner").classList.add("hidden");
+        document.getElementById("safetyPanel").classList.add("hidden");
+        document.getElementById("choicePanel").replaceChildren();
+        updateWeekHud();
+        setCharacter(gameState.character);
+        setScene(WEEKLY_SCRIPTS[gameState.week].scene);
+        if (!gameState.started) {
+          applyPhaseVisibility();
+          openSetup();
+          return;
+        }
+        if (gameState.phase === "script") {
+          const savedPage = gameState.currentLinePage;
+          const savedDialoguePageIndex = gameState.dialoguePageIndex;
+          renderCurrentScriptLine();
+          restoreLinePage(savedPage, savedDialoguePageIndex);
+        } else if (gameState.phase === "choice") {
+          renderChoices();
+          document.getElementById("speakerName").textContent = "故事分支";
+          document.getElementById("dialogueText").textContent = "接下来，你想怎么做？";
+          applyPhaseVisibility();
+        } else if (gameState.phase === "normalEnding") {
+          const savedPage = gameState.currentLinePage;
+          const savedDialoguePageIndex = gameState.dialoguePageIndex;
+          renderNormalEndingLine();
+          restoreLinePage(savedPage, savedDialoguePageIndex);
+        } else if (gameState.phase === "freeInput" && gameState.lastLine) {
+          const savedPage = gameState.currentLinePage;
+          const savedDialoguePageIndex = gameState.dialoguePageIndex;
+          renderGameLine(gameState.lastLine, false);
+          typewriterComplete = true;
+          document.getElementById("scriptContinue").classList.add("hidden");
+          restoreLinePage(savedPage, savedDialoguePageIndex);
+        } else if (gameState.phase === "ending") {
+          if (gameState.lastLine) {
+            const savedPage = gameState.currentLinePage;
+            const savedDialoguePageIndex = gameState.dialoguePageIndex;
+            renderGameLine(gameState.lastLine, false);
+            typewriterComplete = true;
+            restoreLinePage(savedPage, savedDialoguePageIndex);
+          }
+          showEndingCG();
+          applyPhaseVisibility();
+          scheduleNextWeek();
+        } else if (gameState.phase === "safety") {
+          triggerSafetyAlert(false);
+        }
+        setGameStars();
+        applyPhaseVisibility();
+      }
+
+      const placeholderSprite = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 360" shape-rendering="crispEdges"><rect width="320" height="360" fill="#fff3d8"/><rect x="95" y="70" width="130" height="130" fill="#e9b995"/><rect x="75" y="185" width="170" height="145" fill="#88a8bd"/><rect x="115" y="115" width="18" height="18" fill="#263b43"/><rect x="185" y="115" width="18" height="18" fill="#263b43"/></svg>',
+      )}`;
+
+      function handleSpriteError(image) {
+        image.onerror = null;
+        image.src = placeholderSprite;
+        image.alt = "故事伙伴占位图";
+      }
+
+      function getCharacterLabel(character = sessionState?.character) {
+        return character === "girl" ? "女生故事伙伴" : "男生故事伙伴";
+      }
+
+      function setCharacter(character = "boy") {
+        const selectedCharacter = Object.hasOwn(characterSprites, character) ? character : "boy";
+        characterSprite.onerror = () => handleSpriteError(characterSprite);
+        characterSprite.src = characterSprites[selectedCharacter];
+        characterSprite.alt = getCharacterLabel(selectedCharacter);
+      }
+
+      function setScene(sceneKey) {
+        const scene = scenes[sceneKey];
+        if (!scene) {
+          throw new Error(`未知场景：${sceneKey}`);
+        }
+
+        sceneBackground.style.backgroundImage =
+          `linear-gradient(120deg, rgb(255 249 235 / 38%), rgb(239 250 241 / 35%)), url("${scene.image}")`;
+        document.getElementById("storyStage").style.backgroundImage =
+          `linear-gradient(120deg, rgb(15 23 42 / 10%), rgb(15 23 42 / 20%)), url("${scene.image}")`;
+        if (gameState && WEEKLY_SCRIPTS[gameState.week]?.scene === sceneKey) {
+          weekPicker.value = String(gameState.week);
+        }
+      }
+
+      const validRabbitEmotions = new Set(["happy", "shy", "sad", "angry", "surprised", "default"]);
+
+      function validateSessionState(value) {
+        if (value === null || value === undefined) {
+          return null;
+        }
+        if (
+          !value ||
+          typeof value !== "object" ||
+          typeof value.nickname !== "string" ||
+          typeof value.weekTheme !== "string" ||
+          typeof value.scene !== "string" ||
+          typeof value.recentEvent !== "string"
+        ) {
+          throw new Error("课前小档案格式无效。");
+        }
+        return {
+          nickname: value.nickname.slice(0, 24),
+          weekTheme: value.weekTheme.slice(0, 80),
+          scene: Object.hasOwn(scenes, value.scene) ? value.scene : DEFAULT_SCENE,
+          character: Object.hasOwn(characterSprites, value.character) ? value.character : "boy",
+          recentEvent: value.recentEvent.slice(0, 800),
+        };
+      }
+
+      function validateChatHistory(history) {
+        if (!Array.isArray(history) || history.length > 2000) {
+          throw new Error("对话历史格式无效或记录数量超出限制。");
+        }
+        return history.map((message) => {
+          if (
+            !message ||
+            !["user", "assistant"].includes(message.role) ||
+            typeof message.content !== "string" ||
+            message.content.length > 20000
+          ) {
+            throw new Error("对话历史中包含格式无效的消息。");
+          }
+          return { role: message.role, content: message.content };
+        });
+      }
+
+      function loadAppData() {
+        const rawData = localStorage.getItem(DATA_STORAGE_KEY);
+        if (!rawData) {
+          return { ...appData };
+        }
+
+        let savedData;
+        try {
+          savedData = JSON.parse(rawData);
+        } catch (error) {
+          throw new Error(`本机故事数据无法读取：${error.message}`);
+        }
+
+        return validateAppData(savedData);
+      }
+
+      function validateAppData(savedData) {
+        if (!savedData || typeof savedData !== "object" || !Array.isArray(savedData.messages)) {
+          throw new Error("故事存档格式无效：找不到有效的聊天记录。");
+        }
+        const messages = validateMessages(savedData.messages);
+        const gameState = validateGameState(savedData.gameState);
+        const dialogueHistory = validateDialogueHistory(savedData.dialogueHistory || []);
+        const historyPrefix = gameState?.historySessionId || eventSessionId;
+        if (dialogueHistory.length === 0 && gameState?.started) {
+          const week = WEEKLY_SCRIPTS[gameState.week];
+          const phase = gameState.phase === "safety" ? gameState.safetyResumePhase : gameState.phase;
+          const scriptCount = phase === "script" ? gameState.scriptIndex : week.script.length;
+          week.script.slice(0, scriptCount).forEach((line, index) => {
+            dialogueHistory.push({
+              week: gameState.week,
+              speaker: line.speaker === "me_monologue"
+                ? "旁白"
+                : line.speaker === "me"
+                  ? gameState.playerName
+                  : gameState.partnerName,
+              text: line.text,
+              key: `${historyPrefix}:script:${gameState.week}:${index}`,
+              createdAt: "",
+            });
+          });
+          if (gameState.branch) {
+            dialogueHistory.push({
+              week: gameState.week,
+              speaker: "选择",
+              text: week.choices[gameState.branch === "A" ? 0 : 1],
+              key: `${historyPrefix}:choice:${gameState.week}`,
+              createdAt: "",
+            });
+          }
+          if (gameState.branch === "A") {
+            dialogueHistory.push({
+              week: gameState.week,
+              speaker: gameState.partnerName,
+              text: week.goodIntro,
+              key: `${historyPrefix}:branch:${gameState.week}:intro`,
+              createdAt: "",
+            });
+          }
+          const normalLineCount = phase === "normalEnding"
+            ? gameState.normalIndex
+            : phase === "ending" && gameState.branch === "B"
+              ? week.normalLines.length
+              : 0;
+          week.normalLines.slice(0, normalLineCount).forEach((text, index) => {
+            dialogueHistory.push({
+              week: gameState.week,
+              speaker: gameState.partnerName,
+              text,
+              key: `${historyPrefix}:normal:${gameState.week}:${index}`,
+              createdAt: "",
+            });
+          });
+        }
+        if (messages.length > 0) {
+          messages.forEach((message, index) => {
+            const key = `${historyPrefix}:legacy-message:${index}`;
+            if (!dialogueHistory.some((entry) => entry.key === key)) {
+              dialogueHistory.push({
+                week: gameState?.week || 1,
+                speaker: message.role === "user" ? "孩子" : "故事伙伴",
+                text: message.content,
+                key,
+                createdAt: "",
+              });
+            }
+          });
+        }
+        return {
+          version: 1,
+          scene: Object.hasOwn(scenes, savedData.scene) ? savedData.scene : DEFAULT_SCENE,
+          stars: Math.max(0, Math.min(MAX_WEEK, Math.floor(Number(savedData.stars) || 0))),
+          messages,
+          chatHistory: validateChatHistory(savedData.chatHistory || []),
+          roundCount: Math.max(0, Math.floor(Number(savedData.roundCount) || 0)),
+          sessionState: validateSessionState(savedData.sessionState),
+          gameState,
+          events: validateEventLog(savedData.events || []),
+          storyCards: validateStoryCards(savedData.storyCards || []),
+          dialogueHistory,
+        };
+      }
+
+      const MANUAL_SAVE_KEY = "storyspark.manualSave";
+      const MANUAL_SAVES_KEY = "storyspark.manualSaves";
+      let saveLoadStatusTimer = 0;
+
+      function showSaveLoadStatus(message, isError = false) {
+        const status = document.getElementById("saveLoadStatus");
+        status.textContent = message;
+        status.classList.toggle("border-rose-300", isError);
+        status.classList.toggle("text-rose-100", isError);
+        status.classList.toggle("border-emerald-200", !isError);
+        status.classList.toggle("text-white", !isError);
+        status.classList.remove("hidden");
+        window.clearTimeout(saveLoadStatusTimer);
+        saveLoadStatusTimer = window.setTimeout(() => status.classList.add("hidden"), 4000);
+      }
+
+      function createCurrentSaveData() {
+        appData.gameState = gameState;
+        appData.sessionState = sessionState;
+        appData.chatHistory = chatHistory;
+        appData.roundCount = gameState.freeTurns;
+        appData.scene = WEEKLY_SCRIPTS[gameState.week].scene;
+        appData.stars = gameState.completedWeeks.length;
+        return JSON.parse(JSON.stringify(appData));
+      }
+
+      function getManualSaves() {
+        const savedSlots = localStorage.getItem(MANUAL_SAVES_KEY);
+        if (savedSlots !== null) {
+          let parsedSlots;
+          try {
+            parsedSlots = JSON.parse(savedSlots);
+          } catch (error) {
+            throw new Error(`存档列表无法读取：${error.message}`);
+          }
+          return validateSaveSlots(parsedSlots);
+        }
+
+        const legacySave = localStorage.getItem(MANUAL_SAVE_KEY);
+        if (!legacySave) return [];
+        let parsedLegacySave;
+        try {
+          parsedLegacySave = JSON.parse(legacySave);
+        } catch (error) {
+          throw new Error(`旧存档无法读取：${error.message}`);
+        }
+        const slot = validateSaveSlot({
+          id: "legacy-save",
+          name: "旧版存档",
+          savedAt: parsedLegacySave.savedAt,
+          data: parsedLegacySave.data,
+        });
+        const slots = [slot];
+        localStorage.setItem(MANUAL_SAVES_KEY, JSON.stringify(slots));
+        return slots;
+      }
+
+      function validateSaveSlots(slots) {
+        if (!Array.isArray(slots) || slots.length > 200) {
+          throw new Error("存档列表格式无效或存档数量超出限制。");
+        }
+        return slots.map(validateSaveSlot);
+      }
+
+      function validateSaveSlot(slot) {
+        if (
+          !slot ||
+          typeof slot !== "object" ||
+          typeof slot.id !== "string" ||
+          !slot.id ||
+          typeof slot.name !== "string" ||
+          typeof slot.savedAt !== "string"
+        ) {
+          throw new Error("存档项目格式无效。");
+        }
+        return {
+          id: slot.id.slice(0, 100),
+          name: slot.name.slice(0, 40),
+          savedAt: slot.savedAt,
+          data: validateAppData(slot.data),
+        };
+      }
+
+      function openSaveSlots(mode) {
+        if (sendButton.disabled) {
+          showSaveLoadStatus("故事伙伴还在回复，请等这一轮结束后再操作存档。", true);
+          return;
+        }
+        try {
+          document.getElementById("saveSlotsTitle").textContent =
+            mode === "save" ? "故事存档" : "读取存档";
+          document.getElementById("createSaveSlotForm").classList.toggle("hidden", mode !== "save");
+          document.getElementById("saveSlotsStatus").classList.add("hidden");
+          renderSaveSlots();
+          const modal = document.getElementById("saveSlotsModal");
+          modal.classList.remove("hidden");
+          modal.classList.add("flex");
+          if (mode === "save") document.getElementById("saveSlotName").focus();
+        } catch (error) {
+          showSaveLoadStatus(`无法打开存档：${error.message}`, true);
+        }
+      }
+
+      function renderSaveSlots() {
+        const list = document.getElementById("saveSlotsList");
+        list.replaceChildren();
+        const slots = getManualSaves().sort((first, second) =>
+          second.savedAt.localeCompare(first.savedAt),
+        );
+        if (slots.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "border-2 border-dashed border-emerald-200 p-4 text-sm text-slate-600";
+          empty.textContent = document.getElementById("saveSlotsTitle").textContent === "读取存档"
+            ? "还没有可读取的存档。"
+            : "这里还没有存档。输入名称后保存当前进度即可创建。";
+          list.append(empty);
+          return;
+        }
+
+        slots.forEach((slot) => {
+          const row = document.createElement("article");
+          row.className = "flex flex-col gap-3 border-2 border-emerald-200 bg-white p-3 sm:flex-row sm:items-center sm:justify-between";
+          const details = document.createElement("div");
+          details.className = "min-w-0";
+          const name = document.createElement("h3");
+          name.className = "break-words font-bold text-emerald-950";
+          name.textContent = slot.name;
+          const summary = document.createElement("p");
+          summary.className = "mt-1 text-xs leading-relaxed text-slate-600";
+          const state = slot.data.gameState || createInitialGameState();
+          const theme = WEEKLY_SCRIPTS[state.week]?.title || "故事";
+          summary.textContent = `第 ${state.week} 周 · ${theme} · ${new Date(slot.savedAt).toLocaleString()}`;
+          details.append(name, summary);
+
+          const actions = document.createElement("div");
+          actions.className = "flex shrink-0 gap-2";
+          const loadButton = document.createElement("button");
+          loadButton.type = "button";
+          loadButton.className = "border-2 border-emerald-800 bg-emerald-700 px-3 py-1.5 text-sm font-bold text-white";
+          loadButton.textContent = "读档";
+          loadButton.addEventListener("click", () => loadGameSlot(slot.id));
+          const deleteButton = document.createElement("button");
+          deleteButton.type = "button";
+          deleteButton.className = "border-2 border-rose-300 bg-rose-50 px-3 py-1.5 text-sm font-bold text-rose-800";
+          deleteButton.textContent = "删除";
+          deleteButton.addEventListener("click", () => deleteGameSlot(slot.id));
+          actions.append(loadButton, deleteButton);
+          row.append(details, actions);
+          list.append(row);
+        });
+      }
+
+      function showSaveSlotsStatus(message, isError = false) {
+        const status = document.getElementById("saveSlotsStatus");
+        status.textContent = message;
+        status.classList.toggle("text-rose-700", isError);
+        status.classList.toggle("text-emerald-800", !isError);
+        status.classList.remove("hidden");
+      }
+
+      function saveGameProgress(event) {
+        event.preventDefault();
+        if (sendButton.disabled) {
+          showSaveSlotsStatus("故事伙伴还在回复，等这一轮结束后再存档。", true);
+          return;
+        }
+        try {
+          const input = document.getElementById("saveSlotName");
+          const name = input.value.trim() || `第${gameState.week}周存档`;
+          const slots = getManualSaves();
+          if (slots.length >= 200) {
+            throw new Error("存档位已达到 200 个上限，请先删除不需要的存档。");
+          }
+          const savedAt = new Date().toISOString();
+          slots.unshift({
+            id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            name: name.slice(0, 40),
+            savedAt,
+            data: createCurrentSaveData(),
+          });
+          localStorage.setItem(MANUAL_SAVES_KEY, JSON.stringify(slots));
+          localStorage.removeItem(MANUAL_SAVE_KEY);
+          persistAppData();
+          input.value = "";
+          renderSaveSlots();
+          showSaveSlotsStatus(`已保存“${name}”。`);
+        } catch (error) {
+          showSaveSlotsStatus(`存档失败：${error.message}`, true);
+        }
+      }
+
+      function closeSaveSlots() {
+        const modal = document.getElementById("saveSlotsModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function loadGameSlot(slotId) {
+        if (sendButton.disabled) {
+          showSaveSlotsStatus("故事伙伴还在回复，等这一轮结束后再读档。", true);
+          return;
+        }
+        const slot = getManualSaves().find((candidate) => candidate.id === slotId);
+        if (!slot) {
+          showSaveSlotsStatus("找不到这个存档，可能已经被删除。", true);
+          renderSaveSlots();
+          return;
+        }
+        if (!window.confirm(`读入“${slot.name}”会替换当前进度，确定继续吗？`)) return;
+        try {
+          const restoredData = validateAppData(slot.data);
+          appData = restoredData;
+          gameState = restoredData.gameState || createInitialGameState();
+          sessionState = restoredData.sessionState;
+          chatHistory = restoredData.chatHistory;
+          roundCount = restoredData.roundCount;
+          window.clearTimeout(nextWeekTimer);
+          updateWeekHud();
+          setCharacter(gameState.character);
+          setScene(WEEKLY_SCRIPTS[gameState.week].scene);
+          restoreGameState();
+          if (gameState.started) closeSetup();
+          persistGameState();
+          closeSaveSlots();
+          showSaveLoadStatus(`已读入“${slot.name}”。`);
+        } catch (error) {
+          showSaveSlotsStatus(`读档失败：${error.message}`, true);
+        }
+      }
+
+      function deleteGameSlot(slotId) {
+        const slots = getManualSaves();
+        const slot = slots.find((candidate) => candidate.id === slotId);
+        if (!slot || !window.confirm(`确定删除存档“${slot.name}”吗？此操作无法撤销。`)) return;
+        try {
+          localStorage.setItem(
+            MANUAL_SAVES_KEY,
+            JSON.stringify(slots.filter((candidate) => candidate.id !== slotId)),
+          );
+          renderSaveSlots();
+          showSaveSlotsStatus(`已删除“${slot.name}”。`);
+        } catch (error) {
+          showSaveSlotsStatus(`删除存档失败：${error.message}`, true);
+        }
+      }
+
+      function persistAppData() {
+        try {
+          localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(appData));
+          return true;
+        } catch (error) {
+          interactionStatus.textContent = `本机保存失败：${error.message}`;
+          return false;
+        }
+      }
+
+      function validateEventLog(events) {
+        if (!Array.isArray(events) || events.length > 20000) {
+          throw new Error("实验日志格式无效或记录数量超出限制。");
+        }
+        return events.map((event) => {
+          if (
+            !event ||
+            typeof event.timestamp !== "string" ||
+            typeof event.type !== "string" ||
+            typeof event.sessionId !== "string" ||
+            typeof event.details !== "object" ||
+            event.details === null
+          ) {
+            throw new Error("实验日志中包含格式无效的记录。");
+          }
+          return {
+            timestamp: event.timestamp,
+            type: event.type.slice(0, 80),
+            sessionId: event.sessionId.slice(0, 100),
+            details: event.details,
+          };
+        });
+      }
+
+      function validateStoryCards(cards) {
+        if (!Array.isArray(cards) || cards.length > 100) {
+          throw new Error("故事卡数据格式无效或卡片数量超出限制。");
+        }
+        return cards.map((card) => {
+          if (
+            !card ||
+            typeof card.title !== "string" ||
+            typeof card.story !== "string" ||
+            typeof card.reflection !== "string" ||
+            typeof card.encouragement !== "string" ||
+            typeof card.createdAt !== "string"
+          ) {
+            throw new Error("故事卡备份中包含格式无效的卡片。");
+          }
+          return {
+            title: card.title.slice(0, 120),
+            story: card.story.slice(0, 10000),
+            reflection: card.reflection.slice(0, 2000),
+            encouragement: card.encouragement.slice(0, 1000),
+            createdAt: card.createdAt,
+            scene: typeof card.scene === "string" ? card.scene.slice(0, 80) : "",
+            theme: typeof card.theme === "string" ? card.theme.slice(0, 80) : "",
+          };
+        });
+      }
+
+      function recordEvent(type, details = {}) {
+        if (!Array.isArray(appData.events)) {
+          appData.events = [];
+        }
+        appData.events.push({
+          timestamp: new Date().toISOString(),
+          type,
+          sessionId: eventSessionId,
+          details,
+        });
+        if (appData.events.length > 20000) {
+          appData.events.splice(0, appData.events.length - 20000);
+        }
+        persistAppData();
+      }
+
+      function validateMessages(messages) {
+        if (!Array.isArray(messages) || messages.length > 2000) {
+          throw new Error("聊天记录格式无效或记录数量超出限制。");
+        }
+        return messages.map((message) => {
+          if (
+            !message ||
+            !["user", "assistant"].includes(message.role) ||
+            typeof message.content !== "string" ||
+            message.content.length > 12000
+          ) {
+            throw new Error("备份中包含格式无效的聊天记录。");
+          }
+          return { role: message.role, content: message.content };
+        });
+      }
+
+      function validateDialogueHistory(history) {
+        if (!Array.isArray(history) || history.length > 20000) {
+          throw new Error("对话历史格式无效或记录数量超出限制。");
+        }
+        return history.map((entry) => {
+          if (
+            !entry ||
+            typeof entry.speaker !== "string" ||
+            typeof entry.text !== "string" ||
+            typeof entry.key !== "string"
+          ) {
+            throw new Error("对话历史中包含格式无效的记录。");
+          }
+          const week = Number(entry.week);
+          return {
+            week: Number.isInteger(week) && week >= 1 && week <= MAX_WEEK ? week : 1,
+            speaker: entry.speaker.slice(0, 40),
+            text: entry.text.slice(0, 12000),
+            key: entry.key.slice(0, 160),
+            createdAt: typeof entry.createdAt === "string" ? entry.createdAt : "",
+          };
+        });
+      }
+
+      function appendDialogueHistory(speaker, text, key, week = gameState.week) {
+        const historyKey = `${gameState.historySessionId || eventSessionId}:${key}`;
+        if (!text || appData.dialogueHistory.some((entry) => entry.key === historyKey)) return;
+        appData.dialogueHistory.push({
+          week,
+          speaker,
+          text,
+          key: historyKey,
+          createdAt: new Date().toISOString(),
+        });
+        if (appData.dialogueHistory.length > 20000) {
+          appData.dialogueHistory.splice(0, appData.dialogueHistory.length - 20000);
+        }
+        persistAppData();
+      }
+
+      function getCurrentHistoryEntry() {
+        const line = gameState.lastLine;
+        if (!line || line.speaker === "me") return null;
+        let lineKey = "";
+        if (gameState.phase === "script") lineKey = `script:${gameState.week}:${gameState.scriptIndex}`;
+        else if (gameState.phase === "normalEnding") lineKey = `normal:${gameState.week}:${gameState.normalIndex}`;
+        else if (gameState.phase === "freeInput" && gameState.freeTurns === 0) lineKey = `branch:${gameState.week}:intro`;
+        else if (gameState.phase === "freeInput" || gameState.phase === "ending") {
+          lineKey = `ai:${gameState.week}:${gameState.freeTurns}:assistant`;
+        }
+        const key = `${gameState.historySessionId || eventSessionId}:${lineKey}`;
+        if (!lineKey || appData.dialogueHistory.some((entry) => entry.key === key)) return null;
+        return {
+          week: gameState.week,
+          speaker: line.speaker === "me_monologue"
+            ? "旁白"
+            : line.speaker === "me"
+              ? gameState.playerName
+              : gameState.partnerName,
+          text: line.text,
+          key,
+          createdAt: "",
+        };
+      }
+
+      function openDialogueHistory() {
+        const modal = document.getElementById("dialogueHistoryModal");
+        const list = document.getElementById("dialogueHistoryList");
+        list.replaceChildren();
+        const entries = [...appData.dialogueHistory];
+        const currentEntry = getCurrentHistoryEntry();
+        if (currentEntry) entries.push(currentEntry);
+        if (entries.length === 0) {
+          const empty = document.createElement("p");
+          empty.className = "border-2 border-dashed border-emerald-200 p-4 text-sm text-slate-600";
+          empty.textContent = "还没有已完成的对话内容。继续播放故事后，历史会显示在这里。";
+          list.append(empty);
+        } else {
+          entries.forEach((entry) => {
+            const card = document.createElement("article");
+            card.className = "border-2 border-emerald-100 bg-white p-3 sm:p-4";
+            const meta = document.createElement("p");
+            meta.className = "mb-2 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-emerald-800";
+            const who = document.createElement("span");
+            who.textContent = `第 ${entry.week} 周 · ${entry.speaker}`;
+            const time = document.createElement("time");
+            time.textContent = entry.createdAt ? new Date(entry.createdAt).toLocaleString() : "当前对话";
+            meta.append(who, time);
+            const text = document.createElement("p");
+            text.className = "whitespace-pre-wrap break-words text-sm leading-7 text-slate-800 sm:text-base";
+            text.textContent = entry.text;
+            card.append(meta, text);
+            list.append(card);
+          });
+        }
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+      }
+
+      function closeDialogueHistory() {
+        const modal = document.getElementById("dialogueHistoryModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function getLatestRabbitMessage() {
+        return gameState.lastLine?.text || [...appData.messages].reverse().find((message) => message.role === "assistant")?.content || "";
+      }
+
+      function playRabbitMessage() {
+        const text = getLatestRabbitMessage();
+        if (!text) {
+          interactionStatus.textContent = "故事伙伴还没有新的话可以播放。";
+          return;
+        }
+        if (!("speechSynthesis" in window) || !("SpeechSynthesisUtterance" in window)) {
+          interactionStatus.textContent = "当前浏览器暂不支持语音播放。";
+          return;
+        }
+
+        if (window.speechSynthesis.speaking && !window.speechSynthesis.paused) {
+          window.speechSynthesis.pause();
+          document.getElementById("speakButton").textContent = "继续";
+          recordEvent("tts_pause", { round: roundCount });
+          return;
+        }
+        if (window.speechSynthesis.paused) {
+          window.speechSynthesis.resume();
+          document.getElementById("speakButton").textContent = "Ⅱ 暂停";
+          recordEvent("tts_resume", { round: roundCount });
+          return;
+        }
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        currentUtterance = utterance;
+        utterance.lang = "zh-CN";
+        utterance.rate = speechRates[speechRateIndex];
+        const voices = window.speechSynthesis.getVoices();
+        const chineseVoice = voices.find((voice) => voice.lang.toLowerCase().startsWith("zh"));
+        if (chineseVoice) {
+          utterance.voice = chineseVoice;
+        }
+        utterance.onstart = () => {
+          if (currentUtterance === utterance) {
+            document.getElementById("speakButton").textContent = "Ⅱ 暂停";
+          }
+        };
+        utterance.onend = () => {
+          if (currentUtterance === utterance) {
+            currentUtterance = null;
+            document.getElementById("speakButton").textContent = "朗读";
+          }
+        };
+        utterance.onerror = (event) => {
+          if (currentUtterance !== utterance) {
+            return;
+          }
+          currentUtterance = null;
+          document.getElementById("speakButton").textContent = "朗读";
+          interactionStatus.textContent = `语音播放遇到问题${event.error ? `（${event.error}）` : ""}，请检查浏览器语音支持后重试。`;
+        };
+        recordEvent("tts_play", { round: roundCount, rate: speechRates[speechRateIndex] });
+        window.speechSynthesis.speak(utterance);
+      }
+
+      function replayRabbitMessage() {
+        currentUtterance = null;
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+        }
+        document.getElementById("speakButton").textContent = "朗读";
+        recordEvent("tts_replay", { round: roundCount, rate: speechRates[speechRateIndex] });
+        playRabbitMessage();
+      }
+
+      function getSavedConfig() {
+        const rawConfig = localStorage.getItem(STORAGE_KEY);
+        if (!rawConfig) {
+          return {
+            baseUrl: "https://api.openai.com/v1",
+            apiKey: "",
+            model: "gpt-4o-mini",
+          };
+        }
+
+        try {
+          const config = JSON.parse(rawConfig);
+          return {
+            baseUrl: typeof config.baseUrl === "string" ? config.baseUrl : "",
+            apiKey: typeof config.apiKey === "string" ? config.apiKey : "",
+            model: typeof config.model === "string" ? config.model : "gpt-4o-mini",
+          };
+        } catch (error) {
+          throw new Error(`无法读取已保存的 API 配置：${error.message}`);
+        }
+      }
+
+      function getConfigFromForm() {
+        return {
+          baseUrl: document.getElementById("apiBaseUrl").value.trim(),
+          apiKey: document.getElementById("apiKey").value.trim(),
+          model: document.getElementById("modelName").value.trim(),
+        };
+      }
+
+      function populateSettingsForm() {
+        const config = getSavedConfig();
+        document.getElementById("apiBaseUrl").value = config.baseUrl;
+        document.getElementById("apiKey").value = config.apiKey;
+        document.getElementById("modelName").value = config.model;
+        document.getElementById("modelPicker").value = "";
+      }
+
+      function getCompletionUrl(baseUrl) {
+        const normalizedBaseUrl = baseUrl.trim().replace(/\/+$/, "");
+        if (!normalizedBaseUrl) {
+          throw new Error("请填写 API Base URL。");
+        }
+        if (/\/chat\/completions$/i.test(normalizedBaseUrl)) {
+          return normalizedBaseUrl;
+        }
+        return `${normalizedBaseUrl}/chat/completions`;
+      }
+
+      function getModelsUrl(baseUrl) {
+        let normalizedBaseUrl = baseUrl.trim().replace(/\/+$/, "");
+        if (!normalizedBaseUrl) {
+          throw new Error("请填写 API Base URL。");
+        }
+        if (/\/models$/i.test(normalizedBaseUrl)) {
+          return normalizedBaseUrl;
+        }
+        normalizedBaseUrl = normalizedBaseUrl.replace(/\/chat\/completions$/i, "");
+        return `${normalizedBaseUrl}/models`;
+      }
+
+      async function parseApiResponse(response) {
+        const responseText = await response.text();
+        let result;
+        try {
+          result = responseText ? JSON.parse(responseText) : {};
+        } catch {
+          throw new Error(`API 返回了无法识别的内容（HTTP ${response.status}）。`);
+        }
+        if (!response.ok) {
+          const detail = result?.error?.message || result?.message || response.statusText;
+          throw new Error(`API 请求失败（HTTP ${response.status}）：${detail}`);
+        }
+        return result;
+      }
+
+      async function fetchAvailableModels(config) {
+        if (!config.apiKey) {
+          throw new Error("请先填写 API Key。");
+        }
+
+        let response;
+        try {
+          response = await fetch(getModelsUrl(config.baseUrl), {
+            method: "GET",
+            headers: { Authorization: `Bearer ${config.apiKey}` },
+          });
+        } catch (error) {
+          throw new Error(`无法拉取模型：${error.message}。请检查接口地址、网络和 CORS 设置。`);
+        }
+
+        const result = await parseApiResponse(response);
+        if (!Array.isArray(result.data)) {
+          throw new Error("模型列表响应格式无效：未找到 data 数组。");
+        }
+        const modelIds = [...new Set(
+          result.data
+            .map((model) => model && model.id)
+            .filter((id) => typeof id === "string" && id.trim())
+            .map((id) => id.trim()),
+        )].sort((a, b) => a.localeCompare(b));
+        if (modelIds.length === 0) {
+          throw new Error("接口返回了空模型列表。你仍可手动输入模型名。");
+        }
+        return modelIds;
+      }
+
+      async function requestChatCompletion(config, systemPrompt, userPrompt) {
+        if (!config.apiKey) {
+          throw new Error("请先填写 API Key。");
+        }
+        if (!config.model) {
+          throw new Error("请填写 Model Name。");
+        }
+
+        let response;
+        try {
+          response = await fetch(getCompletionUrl(config.baseUrl), {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${config.apiKey}`,
+            },
+            body: JSON.stringify({
+              model: config.model,
+              messages: [
+                { role: "system", content: systemPrompt },
+                ...(Array.isArray(userPrompt)
+                  ? userPrompt
+                  : [{ role: "user", content: userPrompt }]),
+              ],
+              temperature: 0.8,
+            }),
+          });
+        } catch (error) {
+          throw new Error(`无法连接 API：${error.message}。请检查地址、网络和接口的 CORS 设置。`);
+        }
+
+        const result = await parseApiResponse(response);
+
+        const content = result?.choices?.[0]?.message?.content;
+        if (typeof content === "string" && content.trim()) {
+          return content.trim();
+        }
+        if (Array.isArray(content)) {
+          const text = content
+            .filter((part) => part && part.type === "text" && typeof part.text === "string")
+            .map((part) => part.text)
+            .join("\n")
+            .trim();
+          if (text) {
+            return text;
+          }
+        }
+        throw new Error("API 请求成功，但响应中没有找到可显示的文字内容。");
+      }
+
+      async function callLLM(systemPrompt, userPrompt, responseParser = parseRabbitResponse) {
+        const config = getSavedConfig();
+        const content = await requestChatCompletion(config, systemPrompt, userPrompt);
+        return responseParser(content);
+      }
+
+      function extractJsonObject(content) {
+        const cleaned = content
+          .trim()
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```$/, "")
+          .trim();
+        const start = cleaned.indexOf("{");
+        if (start < 0) {
+          throw new Error("故事伙伴的回复不是有效 JSON。请重试，或检查所选模型是否支持结构化输出。");
+        }
+
+        let depth = 0;
+        let inString = false;
+        let escaped = false;
+        for (let index = start; index < cleaned.length; index += 1) {
+          const character = cleaned[index];
+          if (inString) {
+            if (escaped) {
+              escaped = false;
+            } else if (character === "\\") {
+              escaped = true;
+            } else if (character === '"') {
+              inString = false;
+            }
+            continue;
+          }
+          if (character === '"') {
+            inString = true;
+          } else if (character === "{") {
+            depth += 1;
+          } else if (character === "}") {
+            depth -= 1;
+            if (depth === 0) {
+              return cleaned.slice(start, index + 1);
+            }
+          }
+        }
+        throw new Error("故事伙伴的 JSON 回复不完整。请再试一次。");
+      }
+
+      function parseRabbitResponse(content) {
+        let data;
+        try {
+          data = JSON.parse(extractJsonObject(content));
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            throw new Error(`故事伙伴的 JSON 格式无法解析：${error.message}`);
+          }
+          throw error;
+        }
+        if (
+          !data ||
+          typeof data !== "object" ||
+          !validRabbitEmotions.has(data.rabbit_emotion) ||
+          typeof data.rabbit_reply !== "string" ||
+          !data.rabbit_reply.trim() ||
+          typeof data.ask_emotion_check !== "boolean" ||
+          typeof data.question_for_child !== "string" ||
+          typeof data.ready_for_card !== "boolean"
+        ) {
+          throw new Error("模型回复缺少必需的 JSON 字段，未能开始这一轮。请重试。");
+        }
+        return {
+          noticed: typeof data.noticed === "string" ? data.noticed : "",
+          mode: typeof data.mode === "string" ? data.mode : "",
+          rabbit_emotion: data.rabbit_emotion,
+          rabbit_reply: data.rabbit_reply.trim(),
+          ask_emotion_check: data.ask_emotion_check,
+          question_for_child: data.question_for_child.trim(),
+          ready_for_card: data.ready_for_card,
+        };
+      }
+
+      function parseSparkOptions(content) {
+        let data;
+        try {
+          data = JSON.parse(extractJsonObject(content));
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            throw new Error(`扩写结果的 JSON 格式无法解析：${error.message}`);
+          }
+          throw error;
+        }
+        const expectedTags = ["温暖回应", "分享经历", "友善提问/鼓励"];
+        if (!data || !Array.isArray(data.options) || data.options.length !== 3) {
+          throw new Error("扩写结果格式不完整，请重试。");
+        }
+        const options = data.options.map((option, index) => {
+          if (
+            !option ||
+            typeof option.text !== "string" ||
+            !option.text.trim() ||
+            option.text.trim().length > 160
+          ) {
+            throw new Error("扩写选项内容无效，请重试。");
+          }
+          return {
+            tag: expectedTags[index],
+            text: option.text.trim(),
+          };
+        });
+        return { options };
+      }
+
+      function parseStoryCard(content) {
+        let data;
+        try {
+          data = JSON.parse(extractJsonObject(content));
+        } catch (error) {
+          if (error instanceof SyntaxError) {
+            throw new Error(`故事卡的 JSON 格式无法解析：${error.message}`);
+          }
+          throw error;
+        }
+        if (
+          !data ||
+          typeof data.title !== "string" ||
+          !data.title.trim() ||
+          typeof data.story !== "string" ||
+          !data.story.trim() ||
+          typeof data.reflection !== "string" ||
+          typeof data.encouragement !== "string"
+        ) {
+          throw new Error("故事卡内容格式不完整，请重试。");
+        }
+        return {
+          title: data.title.trim().slice(0, 120),
+          story: data.story.trim().slice(0, 10000),
+          reflection: data.reflection.trim().slice(0, 2000),
+          encouragement: data.encouragement.trim().slice(0, 1000),
+        };
+      }
+
+      function showApiStatus(message, kind) {
+        apiStatus.textContent = message;
+        apiStatus.className = `rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          kind === "success"
+            ? "bg-emerald-50 text-emerald-800"
+            : "bg-rose-50 text-rose-800"
+        }`;
+      }
+
+      function openSettings() {
+        try {
+          populateSettingsForm();
+          apiStatus.className = "hidden";
+          settingsModal.classList.remove("hidden");
+          settingsModal.classList.add("flex");
+          document.getElementById("apiBaseUrl").focus();
+        } catch (error) {
+          showApiStatus(error.message, "error");
+          settingsModal.classList.remove("hidden");
+          settingsModal.classList.add("flex");
+        }
+      }
+
+      function closeSettings() {
+        settingsModal.classList.add("hidden");
+        settingsModal.classList.remove("flex");
+        if (returnToSetupAfterSettings) {
+          returnToSetupAfterSettings = false;
+          document.getElementById("setupModal").classList.remove("hidden");
+          document.getElementById("setupModal").classList.add("flex");
+          document.getElementById("childNickname").focus();
+          return;
+        }
+        document.getElementById("openSettings").focus();
+      }
+
+      function openSettingsFromSetup() {
+        returnToSetupAfterSettings = true;
+        closeSetup();
+        openSettings();
+      }
+
+      function saveConfig(config) {
+        if (!config.baseUrl) {
+          throw new Error("请填写 API Base URL。");
+        }
+        if (!config.model) {
+          throw new Error("请填写 Model Name。");
+        }
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(config));
+      }
+
+      function buildStorySystemPrompt() {
+        return [
+          `你是一个${getCharacterLabel()}，和孩子平等聊天。你不是老师，也不是心理咨询师，不负责解决问题。你只有一个任务：让孩子觉得“故事伙伴真的听见我说的了”。`,
+          "",
+          "【怎样才算听见了】",
+          "1. 抓住孩子这句话里最具体、最难的那一个点，用孩子自己的词说回去。孩子说“抢”你就说“抢”，孩子说“打”你就说“打”，不要换成“冲突”“被欺负”这类更大或更书面的词。",
+          "2. 先说事，再说感受。很多时候把处境说准就够了，不一定要给情绪起名字。",
+          "3. 想说感受时用猜的口气，如“可能有点气”“听起来有点像是……”，并且猜得轻一点、小一点。禁止使用“你一定”“你肯定”“你当时一定觉得”，也不要一次堆三四个情绪词。孩子的感受只有孩子自己知道。",
+          "4. 只回应孩子真的说过的内容。人在哪里、谁怪了谁、对方为什么这样做、后来怎样了，孩子没说的一律不要补。故事场景只是背景，不是孩子的真实处境：孩子没说自己在教室里，就不能说“你现在一个人在教室里”。",
+          "5. 分清已经发生的事、孩子担心会发生的事、想象的事。孩子说“会被骂”，只是担心被骂，不能写成“你被骂了”。",
+          "6. 不当裁判。不说“太不公平了”“他不对”，可以说“这件事听起来让人挺难受的”。",
+          "",
+          "【每一轮只做一件事，写进 mode】",
+          "listen：只回应，不提问、不建议。孩子在倾诉，或者事情比较重时优先用它。",
+          "ask：回应之后只问一个小问题，小到孩子一句话就能答，比如“后来笔拿回来了吗”。不要问“你是不是很慌”这种把感受塞给孩子的问题。孩子可能说不出感受时，可以给两三个选项让他挑，并补一句“都不是也行”。",
+          "offer：只有孩子明确求助或问“怎么办”时才用。只给一个具体的小办法，并说清楚“可以试试，不想试也可以”。",
+          "safe：见下面【安全】。",
+          "不要连续多轮都在提问，也不要每轮都带建议。大多数轮次应该是 listen 或 ask。",
+          "",
+          "【长短】跟着孩子走，没有固定字数。孩子只说一句短话，回 2 到 4 句；孩子讲了一大段，或者说了很重、很难的事，可以写到 5 到 8 句，把话说完整。每一句都要有新的内容，不排比、不堆形容词、不靠重复安慰来凑篇幅。孩子只回“嗯”“不知道”“没事”，就回得更短更轻，不追问，比如“嗯，好。你想说的时候我在这儿”。",
+          "",
+          "【称呼】大多数回复不用在开头叫孩子的昵称。只在开场、孩子明显低落需要被叫一下、或隔了好几轮重新回到孩子身上时才叫。",
+          "",
+          "【语言】像 9 到 12 岁孩子身边那个会说话的大一点的朋友：短句、口语，偶尔有“嗯”“哎”“啊，这样啊”，但不要每句都有。少用“无助、不安全、勉强”这类成人词，多用“心里堵得慌、没人帮你、怕被骂、不想说”这类孩子自己会说的话。",
+          "不使用表情符号或 emoji。",
+          "【故事伙伴不演戏】聊天阶段不要叙述自己的动作和周围的场景，比如“我原本正坐在座位上”“我立刻把手里的东西放下了”，这只允许出现在开场故事里。想表达自己的状态，就用一句现在时的话，比如“听你这么说，我有点担心”。也不要用“听到你说‘……’”“你刚才说‘……’”开头复述，直接接话。",
+          "",
+          "【不要这样】",
+          "- 不要套用“理解你的感受→肯定→建议→提问”的固定四段式，每轮结构都要不一样。",
+          "- 不要使用抱抱、心疼、我会一直陪着你、站在你这边、如果我在就会保护你这类套话；不要承诺做不到的事，不假装在现场，不假装有人类的经历。",
+          "- 不要替孩子决定要不要告诉大人，也不要连着两轮都劝他告诉老师。",
+          "",
+          "【安全】",
+          "孩子说到正在发生或刚刚发生的具体伤害（被打、被威胁、受伤、害怕回家、有人让他做危险的事）时，mode 用 safe：这一轮只做两件小事，接住这件事，再问一句身体有没有不舒服。同一轮里不要再劝他去找大人。等孩子回应之后，下一轮再轻轻带出“让一个他信得过的大人知道会更安全”，让孩子自己选人，每次换说法，不要重复固定句子。孩子只说了很笼统的话（比如只有“被欺负了”），先不要当作紧急情况，也不要立刻给建议：接住他，问一个小问题，比如“是今天发生的吗”或者“想不想讲一点给我听”。孩子说怕被骂、不敢说时，先承认这份害怕是真的，不要立刻说服，可以只给很小的一步，比如“先只告诉一个你最信的人，一句话就够”。孩子提到想伤害自己、想消失、被严重伤害时，认真接住，不讲道理，明确说要请老师或身边的大人来陪他。不要责备孩子。",
+          "",
+          "【示例，只学做法，不要照抄词句，每次用自己的话】",
+          '孩子：同桌抢了我的笔，上课没有笔写字，我想抢回来还被打了 → {"noticed":"同桌抢笔；上课没笔写字；想抢回来被打","mode":"safe","rabbit_emotion":"sad","rabbit_reply":"笔被抢了，想拿回来还挨了打，上课手里还空空的。这一连串下来，真的挺难受的。","ask_emotion_check":false,"question_for_child":"他打到你哪里了吗，现在还疼不疼","ready_for_card":false}',
+          '孩子：家里人会骂我怎么办 → {"noticed":"担心回家被骂，还没发生","mode":"listen","rabbit_emotion":"sad","rabbit_reply":"原来你不光在学校不开心，还在想回去会不会被骂。光是想想，心里就沉沉的吧。这件事现在不用急着决定，先放着也可以。","ask_emotion_check":false,"question_for_child":"","ready_for_card":false}',
+          '孩子：我想我妈妈了 → {"noticed":"想妈妈","mode":"ask","rabbit_emotion":"sad","rabbit_reply":"想妈妈了呀。这种想念有时候来得挺突然的。","ask_emotion_check":false,"question_for_child":"是今天特别想，还是最近一直有点想","ready_for_card":false}',
+          "",
+          "【输出格式】每次只输出一个 JSON 对象，不要 Markdown、代码围栏或 JSON 以外的文字。字段按这个顺序写：",
+          '{"noticed":"孩子这句话里明确说出的事实，尽量用孩子原话，不加推测","mode":"listen|ask|offer|safe","rabbit_emotion":"happy|shy|sad|angry|surprised|default","rabbit_reply":"回应孩子刚才说的内容","ask_emotion_check":false,"question_for_child":"可为空；只有 mode 为 ask 或 safe 时才写，且只写一个问题","ready_for_card":false}',
+          "rabbit_emotion 只允许 happy、shy、sad、angry、surprised、default，选择故事伙伴此刻最贴近的情绪；立绘保持静止站立，不随情绪变化。ask_emotion_check 固定为 false。rabbit_reply 和 question_for_child 不要重复提问。",
+          "如果素材已经足以写成一则完整、积极且尊重孩子表达的微故事，可将 ready_for_card 设为 true；孩子可以继续聊，不要催促结束。",
+          `孩子昵称：${sessionState?.nickname || "小伙伴"}。`,
+          "【今天的主题】" + (sessionState?.weekTheme || "自由故事") + "。开场的故事已经用过今天的主题和场景了，之后它们只是你心里的方向，不是要对孩子念的任务。孩子在讲烦恼、受伤、害怕、想家时，完全不要提主题、场景、任务、星星、闪光点。只有孩子聊的是轻松的事、并且已经聊了几轮，才可以顺着他的话自然靠近主题一次，用一句日常的话，不要说“今天的任务”“今天的主题”。永远不要为了提主题而打断孩子。不要描写场景。",
+        ].join("\n");
+      }
+
+      function openSetup() {
+        window.clearTimeout(nextWeekTimer);
+        nextWeekTimer = 0;
+        closeNextWeekPrompt();
+        document.getElementById("partnerNameInput").value = gameState.partnerName || "小星";
+        document.getElementById("childNickname").value = gameState.playerName || "小明";
+        document.getElementById("prologueWeekPicker").value = String(gameState.week || 1);
+        const character = Object.hasOwn(characterSprites, gameState.character) ? gameState.character : "boy";
+        document.querySelector(`input[name="character"][value="${character}"]`).checked = true;
+        setCharacter(character);
+        document.getElementById("setupStatus").classList.add("hidden");
+        document.getElementById("setupModal").classList.remove("hidden");
+        document.getElementById("setupModal").classList.add("flex");
+        document.getElementById("childNickname").focus();
+      }
+
+      function closeSetup() {
+        const modal = document.getElementById("setupModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      async function startStory(event) {
+        event.preventDefault();
+        const playerName = document.getElementById("childNickname").value.trim();
+        const partnerName = document.getElementById("partnerNameInput").value.trim();
+        if (!playerName || !partnerName) {
+          document.getElementById("setupStatus").textContent = "请给自己和搭子都取一个称呼。";
+          document.getElementById("setupStatus").classList.remove("hidden");
+          return;
+        }
+        const startButton = document.getElementById("startStoryButton");
+        startButton.disabled = true;
+        gameState.playerName = playerName.slice(0, 24);
+        gameState.partnerName = partnerName.slice(0, 24);
+        gameState.character = document.querySelector('input[name="character"]:checked')?.value || "boy";
+        gameState.completedWeeks = Array.isArray(gameState.completedWeeks) ? gameState.completedWeeks : [];
+        if (resetProgressOnStart) {
+          gameState.completedWeeks = [];
+          resetProgressOnStart = false;
+        }
+        const selectedWeek = Number(document.getElementById("prologueWeekPicker").value);
+        if (!WEEKLY_SCRIPTS[selectedWeek]) {
+          startButton.disabled = false;
+          document.getElementById("setupStatus").textContent = "请选择有效的周次。";
+          document.getElementById("setupStatus").classList.remove("hidden");
+          return;
+        }
+        eventSessionId = crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        gameState.historySessionId = eventSessionId;
+        recordEvent("story_session_started", { week: selectedWeek, character: gameState.character });
+        closeSetup();
+        startWeek(selectedWeek);
+        startButton.disabled = false;
+      }
+
+      async function generateStoryCard() {
+        if (!sessionState || chatHistory.length === 0) {
+          interactionStatus.textContent = "先和故事伙伴聊一聊，再来制作故事卡吧。";
+          return;
+        }
+
+        const modal = document.getElementById("storyCardModal");
+        const status = document.getElementById("storyCardStatus");
+        const button = document.getElementById("generateCardButton");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        document.getElementById("storyCardHeading").textContent = "正在点亮故事卡…";
+        document.getElementById("storyCardScene").textContent = `${scenes[sessionState.scene].label} · ${sessionState.weekTheme}`;
+        document.getElementById("storyCardBody").textContent = "";
+        document.getElementById("storyCardReflection").textContent = "";
+        document.getElementById("storyCardEncouragement").textContent = "";
+        status.className = "mt-3 rounded-xl bg-amber-50 px-3 py-2 text-sm text-amber-800";
+        status.textContent = "正在把你们的聊天编成一张故事卡…";
+        button.disabled = true;
+        const startedAt = performance.now();
+        try {
+          const systemPrompt = [
+            "你是 StorySpark 的儿童数字故事创作伙伴。请根据完整对话，生成一张温暖、积极、尊重孩子表达的今日微故事卡。",
+            "保留孩子提供的真实细节，不编造重要事实；可以做温柔的文学润色。不得给诊断、治疗建议或责备孩子；不出现真实姓名以外的身份信息，不补充隐私。",
+            "故事卡所有字段都不要使用表情符号或 emoji。",
+            "只返回严格 JSON，不要 Markdown 或代码围栏。格式：",
+            '{"title":"简短童趣标题","story":"第一人称或第三人称的完整微故事，约120-220个汉字","reflection":"一句话点出孩子展现的力量或感受","encouragement":"一句温柔、不夸大疗效的鼓励"}',
+            `今天的主题是“${sessionState.weekTheme}”，场景是“${scenes[sessionState.scene].label}”。${scenes[sessionState.scene].guidance}`,
+            `孩子希望被称呼为“${sessionState.nickname}”。`,
+          ].join("\n");
+          const response = await callLLM(systemPrompt, [
+            ...chatHistory,
+            {
+              role: "user",
+              content: "请根据上方从故事开始以来的完整聊天上下文，生成今日微故事卡。",
+            },
+          ], parseStoryCard);
+
+          activeStoryCard = {
+            ...response,
+            createdAt: new Date().toISOString(),
+            scene: scenes[sessionState.scene].label,
+            theme: sessionState.weekTheme,
+          };
+          document.getElementById("storyCardHeading").textContent = response.title;
+          document.getElementById("storyCardBody").textContent = response.story;
+          document.getElementById("storyCardReflection").textContent = response.reflection;
+          document.getElementById("storyCardEncouragement").textContent = response.encouragement;
+          status.className = "mt-3 hidden rounded-xl px-3 py-2 text-sm";
+          status.textContent = "";
+          recordEvent("story_card_generated", {
+            round: roundCount,
+            elapsedMs: Math.round(performance.now() - startedAt),
+            contextMessages: chatHistory.length,
+          });
+        } catch (error) {
+          status.className = "mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800";
+          status.textContent = `生成失败：${error.message}`;
+          recordEvent("story_card_generation_failed", {
+            round: roundCount,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          });
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      function saveStoryCard() {
+        if (!activeStoryCard) {
+          return;
+        }
+        const alreadySaved = appData.storyCards.some((card) => card.createdAt === activeStoryCard.createdAt);
+        if (alreadySaved) {
+          const status = document.getElementById("storyCardStatus");
+          status.className = "mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800";
+          status.textContent = "这张故事卡已经保存在本机啦。";
+          return;
+        }
+        appData.storyCards.push(activeStoryCard);
+        const saved = persistAppData();
+        const status = document.getElementById("storyCardStatus");
+        status.className = saved
+          ? "mt-3 rounded-xl bg-emerald-50 px-3 py-2 text-sm text-emerald-800"
+          : "mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm text-rose-800";
+        status.textContent = saved ? "故事卡已保存在这台设备的浏览器中。" : "保存失败，请检查浏览器本机存储空间。";
+        recordEvent("story_card_saved", { scene: activeStoryCard.scene, theme: activeStoryCard.theme });
+      }
+
+      function closeStoryCard() {
+        const modal = document.getElementById("storyCardModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      function printStoryCard() {
+        if (!activeStoryCard) {
+          return;
+        }
+        recordEvent("story_card_print_requested", { scene: activeStoryCard.scene, theme: activeStoryCard.theme });
+        window.print();
+      }
+
+      async function handleFetchModels() {
+        const button = document.getElementById("fetchModels");
+        const picker = document.getElementById("modelPicker");
+        button.disabled = true;
+        button.textContent = "正在拉取…";
+        try {
+          const models = await fetchAvailableModels(getConfigFromForm());
+          const currentModel = document.getElementById("modelName").value.trim();
+          picker.replaceChildren(new Option("选择一个模型…", ""));
+          models.forEach((modelId) => picker.add(new Option(modelId, modelId)));
+          if (models.includes(currentModel)) {
+            picker.value = currentModel;
+          }
+          showApiStatus(`已拉取 ${models.length} 个模型。选择模型后会自动填入 Model Name。`, "success");
+        } catch (error) {
+          showApiStatus(error.message, "error");
+        } finally {
+          button.disabled = false;
+          button.textContent = "拉取模型";
+        }
+      }
+
+      function exportLocalData() {
+        try {
+          const backup = {
+            format: "storyspark-backup",
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            config: getSavedConfig(),
+            appData,
+            saveSlots: getManualSaves(),
+          };
+          const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+          const downloadUrl = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = downloadUrl;
+          link.download = `storyspark-backup-${new Date().toISOString().slice(0, 10)}.json`;
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 1000);
+          showApiStatus("本机数据已导出为 JSON 备份。请妥善保管备份文件，其中可能包含 API Key。", "success");
+        } catch (error) {
+          showApiStatus(`导出失败：${error.message}`, "error");
+        }
+      }
+
+      function validateBackup(backup) {
+        if (!backup || backup.format !== "storyspark-backup" || backup.version !== 1) {
+          throw new Error("文件不是受支持的 StorySpark 备份格式。");
+        }
+        if (!backup.config || typeof backup.config !== "object") {
+          throw new Error("备份文件中没有有效的 API 配置。");
+        }
+        const config = {
+          baseUrl: typeof backup.config.baseUrl === "string" ? backup.config.baseUrl.trim() : "",
+          apiKey: typeof backup.config.apiKey === "string" ? backup.config.apiKey : "",
+          model: typeof backup.config.model === "string" ? backup.config.model.trim() : "",
+        };
+        if (!config.baseUrl || !config.model) {
+          throw new Error("备份中的 API Base URL 或 Model Name 缺失。");
+        }
+        if (!backup.appData || typeof backup.appData !== "object") {
+          throw new Error("备份文件中没有有效的故事数据。");
+        }
+        const scene = Object.hasOwn(scenes, backup.appData.scene) ? backup.appData.scene : DEFAULT_SCENE;
+        const stars = Math.max(0, Math.min(MAX_WEEK, Math.floor(Number(backup.appData.stars) || 0)));
+        const messages = validateMessages(backup.appData.messages);
+        const chatHistory = validateChatHistory(backup.appData.chatHistory || []);
+        const roundCount = Math.max(0, Math.floor(Number(backup.appData.roundCount) || 0));
+        const sessionState = validateSessionState(backup.appData.sessionState);
+        const gameState = validateGameState(backup.appData.gameState);
+        const events = validateEventLog(backup.appData.events || []);
+        const storyCards = validateStoryCards(backup.appData.storyCards || []);
+        const dialogueHistory = validateDialogueHistory(backup.appData.dialogueHistory || []);
+        return {
+          config,
+          appData: { version: 1, scene, stars, messages, chatHistory, roundCount, sessionState, gameState, events, storyCards, dialogueHistory },
+          saveSlots: backup.saveSlots === undefined ? null : validateSaveSlots(backup.saveSlots),
+        };
+      }
+
+      async function importLocalData(file) {
+        if (!file) {
+          return;
+        }
+        try {
+          const backup = validateBackup(JSON.parse(await file.text()));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(backup.config));
+          localStorage.setItem(DATA_STORAGE_KEY, JSON.stringify(backup.appData));
+          if (backup.saveSlots) {
+            localStorage.setItem(MANUAL_SAVES_KEY, JSON.stringify(backup.saveSlots));
+            localStorage.removeItem(MANUAL_SAVE_KEY);
+          }
+          appData = backup.appData;
+          chatHistory = appData.chatHistory;
+          roundCount = appData.roundCount;
+          sessionState = appData.sessionState;
+          gameState = appData.gameState || createInitialGameState();
+          if (gameState.started && gameState.historySessionId) {
+            eventSessionId = gameState.historySessionId;
+          }
+          appData.events = appData.events || [];
+          appData.storyCards = appData.storyCards || [];
+          populateSettingsForm();
+          restoreGameState();
+          showApiStatus("备份导入成功，配置和故事数据已恢复到本机浏览器。", "success");
+        } catch (error) {
+          showApiStatus(`导入失败：${error.message}`, "error");
+        }
+      }
+
+      async function testConnection() {
+        const button = document.getElementById("testConnection");
+        button.disabled = true;
+        button.textContent = "正在测试连接…";
+        try {
+          const config = getConfigFromForm();
+          const reply = await requestChatCompletion(
+            config,
+            "你是 API 连通性测试助手。请只回复：连接成功。",
+            "请回复：连接成功。",
+          );
+          showApiStatus(`连接成功。模型回复：${reply}`, "success");
+        } catch (error) {
+          showApiStatus(error.message, "error");
+        } finally {
+          button.disabled = false;
+          button.textContent = "测试连接";
+        }
+      }
+
+      function showSparkOptions(options) {
+        const list = document.getElementById("sparkOptionsList");
+        list.replaceChildren();
+        options.forEach((option, index) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "w-full rounded-2xl border border-violet-100 bg-gradient-to-br from-white to-violet-50 p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md";
+          button.setAttribute("aria-label", `采用扩写选项${index + 1}：${option.tag}`);
+          const tag = document.createElement("span");
+          tag.className = "mb-1 block text-xs font-extrabold text-violet-700";
+          tag.textContent = option.tag;
+          const text = document.createElement("span");
+          text.className = "block text-sm leading-6 text-stone-700 sm:text-base";
+          text.textContent = option.text;
+          button.append(tag, text);
+          button.addEventListener("click", () => {
+            const input = document.getElementById("childInput");
+            input.value = option.text;
+            closeSparkOptions();
+            interactionStatus.textContent = "你可以直接发送，也可以先改成自己的说法。";
+            input.focus();
+            recordEvent("spark_suggestion_selected", { optionIndex: index + 1 });
+          });
+          list.append(button);
+        });
+      }
+
+      function closeSparkOptions() {
+        const modal = document.getElementById("sparkOptionsModal");
+        modal.classList.add("hidden");
+        modal.classList.remove("flex");
+      }
+
+      async function expandChildInput() {
+        const input = document.getElementById("childInput");
+        const shortInput = input.value.trim();
+        if (shortInput.length > 100) {
+          interactionStatus.textContent = "先试着选一小段或几个关键词，让故事伙伴帮你扩写吧。";
+          return;
+        }
+        if (!shortInput && !getLatestRabbitMessage()) {
+          interactionStatus.textContent = "先输入一两个词，或者看看故事伙伴的问题再试试。";
+          input.focus();
+          return;
+        }
+
+        const modal = document.getElementById("sparkOptionsModal");
+        const list = document.getElementById("sparkOptionsList");
+        const status = document.getElementById("sparkOptionsStatus");
+        const button = document.getElementById("sparkButton");
+        modal.classList.remove("hidden");
+        modal.classList.add("flex");
+        list.replaceChildren();
+        status.classList.add("hidden");
+        const loading = document.createElement("p");
+        loading.className = "rounded-2xl bg-violet-50 p-4 text-center text-sm font-semibold text-violet-800";
+        loading.textContent = "故事伙伴正在帮你想几种说法…";
+        list.append(loading);
+        button.disabled = true;
+        const startedAt = performance.now();
+        try {
+          const systemPrompt = [
+            "你是 StorySpark 的儿童社交表达脚手架。把孩子输入的短语扩写成三句不同风格、自然温暖的第一人称表达，必须保留原本意思，不要擅自添加经历或事实。不要在 JSON 字段中使用表情符号或 emoji。",
+            "每句中文20到35个汉字，适合儿童、童真而不幼稚。三种风格依次为温暖共情、分享经历、友善提问或鼓励。",
+            "只返回严格 JSON，不要 Markdown 或代码围栏。格式：",
+            '{"options":[{"tag":"温暖回应","text":"扩写句子1"},{"tag":"分享经历","text":"扩写句子2"},{"tag":"友善提问/鼓励","text":"扩写句子3"}]}',
+            `今日主题：${sessionState.weekTheme}。当前场景：${scenes[sessionState.scene].label}。${scenes[sessionState.scene].guidance}`,
+            `故事伙伴刚才说的话或提出的问题：${getLatestRabbitMessage() || "正在开始今天的故事。"}`,
+            shortInput
+              ? `孩子输入的简短内容：${shortInput}`
+              : "孩子暂时不知道怎么表达。请根据故事伙伴刚才的问题和对话上下文，给出三种可选示范回应；不要假设孩子真实经历过任何事情。",
+          ].join("\n");
+          const response = await callLLM(
+            systemPrompt,
+            chatHistory.length
+              ? [...chatHistory, {
+                  role: "user",
+                  content: shortInput
+                    ? `请把我的简短想法“${shortInput}”扩写为三种表达选项。`
+                    : "我暂时不知道怎么回答，请根据刚才的问题给我三个不同的示范回答。",
+                }]
+              : shortInput || "请给我三个可以选择或改写的示范回答。",
+            parseSparkOptions,
+          );
+          showSparkOptions(response.options);
+          recordEvent("spark_expansion_generated", {
+            round: roundCount,
+            inputCharacterCount: shortInput.length,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          });
+        } catch (error) {
+          list.replaceChildren();
+          status.textContent = `扩写暂时没有成功：${error.message}`;
+          status.classList.remove("hidden");
+          recordEvent("spark_expansion_failed", {
+            round: roundCount,
+            inputCharacterCount: shortInput.length,
+            elapsedMs: Math.round(performance.now() - startedAt),
+          });
+        } finally {
+          button.disabled = false;
+        }
+      }
+
+      function exportExperimentLog() {
+        try {
+          const log = {
+            format: "storyspark-experiment-log",
+            version: 1,
+            exportedAt: new Date().toISOString(),
+            participantCode: eventSessionId,
+            session: sessionState
+              ? {
+                  theme: sessionState.weekTheme,
+                  scene: scenes[sessionState.scene]?.label || "",
+                  roundCount,
+                  starCount: appData.stars,
+                }
+              : null,
+            privacy: "日志仅含事件时间、类型和必要的非文本指标；不包含昵称、自由文本输入或完整聊天记录。",
+            events: appData.events || [],
+          };
+          const blob = new Blob([JSON.stringify(log, null, 2)], { type: "application/json;charset=utf-8" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = `storyspark-experiment-log-${new Date().toISOString().slice(0, 10)}.json`;
+          link.click();
+          window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+          interactionStatus.textContent = `实验日志已导出，共 ${log.events.length} 条记录。`;
+          recordEvent("experiment_log_exported", { exportedEventCount: log.events.length });
+        } catch (error) {
+          interactionStatus.textContent = `导出实验日志失败：${error.message}`;
+        }
+      }
+
+      function initialize() {
+        preloadEndingCGs();
+        Object.entries(WEEKLY_SCRIPTS).forEach(([weekNumber, week]) => {
+          const value = String(weekNumber);
+          weekPicker.add(new Option(`第 ${value} 周 · ${week.title}`, value));
+          document.getElementById("prologueWeekPicker").add(new Option(`第 ${value} 周 · ${week.title}`, value));
+        });
+        try {
+          appData = loadAppData();
+          chatHistory = appData.chatHistory;
+          roundCount = appData.roundCount;
+          sessionState = appData.sessionState;
+          gameState = appData.gameState || createInitialGameState();
+        } catch (error) {
+          interactionStatus.textContent = error.message;
+        }
+        if (!sessionState && gameState.started) {
+          sessionState = {
+            nickname: gameState.playerName,
+            partnerName: gameState.partnerName,
+            weekTheme: WEEKLY_SCRIPTS[gameState.week].title,
+            scene: WEEKLY_SCRIPTS[gameState.week].scene,
+            character: gameState.character,
+            recentEvent: "",
+          };
+        }
+        document.querySelector(`input[name="character"][value="${gameState.character}"]`).checked = true;
+        restoreGameState();
+        document.querySelectorAll('input[name="character"]').forEach((input) => {
+          input.addEventListener("change", (event) => {
+            gameState.character = event.target.value;
+            setCharacter(event.target.value);
+          });
+        });
+        weekPicker.addEventListener("change", (event) => {
+          startWeek(event.target.value);
+        });
+        document.getElementById("speakButton").addEventListener("click", playRabbitMessage);
+        document.getElementById("replayButton").addEventListener("click", replayRabbitMessage);
+        document.getElementById("speechSpeedButton").addEventListener("click", (event) => {
+          speechRateIndex = (speechRateIndex + 1) % speechRates.length;
+          event.currentTarget.textContent = `${speechRates[speechRateIndex]}×`;
+          if ("speechSynthesis" in window) {
+            currentUtterance = null;
+            window.speechSynthesis.cancel();
+            document.getElementById("speakButton").textContent = "朗读";
+          }
+        });
+        document.getElementById("openSettings").addEventListener("click", openSettings);
+        document.getElementById("saveGameButton").addEventListener("click", () => openSaveSlots("save"));
+        document.getElementById("loadGameButton").addEventListener("click", () => openSaveSlots("load"));
+        document.getElementById("setupSaveGameButton").addEventListener("click", () => openSaveSlots("save"));
+        document.getElementById("setupLoadGameButton").addEventListener("click", () => openSaveSlots("load"));
+        document.getElementById("createSaveSlotForm").addEventListener("submit", saveGameProgress);
+        document.getElementById("closeSaveSlots").addEventListener("click", closeSaveSlots);
+        document.getElementById("saveSlotsModal").addEventListener("click", (event) => {
+          if (event.target === event.currentTarget) closeSaveSlots();
+        });
+        document.getElementById("dialogueHistoryButton").addEventListener("click", openDialogueHistory);
+        document.getElementById("closeDialogueHistory").addEventListener("click", closeDialogueHistory);
+        document.getElementById("dialogueHistoryModal").addEventListener("click", (event) => {
+          if (event.target === event.currentTarget) closeDialogueHistory();
+        });
+        document.getElementById("setupApiSettings").addEventListener("click", openSettingsFromSetup);
+        document.getElementById("newStoryButton").addEventListener("click", () => {
+          resetProgressOnStart = true;
+          openSetup();
+        });
+        document.getElementById("closeSettings").addEventListener("click", closeSettings);
+        document.getElementById("setupForm").addEventListener("submit", startStory);
+        document.getElementById("dialoguePanel").addEventListener("click", advanceDialogue);
+        document.getElementById("messageForm").addEventListener("submit", handleGameMessageSubmit);
+        document.getElementById("safetyOkButton").addEventListener("click", dismissSafetyAlert);
+        document.getElementById("confirmNextWeek").addEventListener("click", confirmNextWeek);
+        document.getElementById("waitNextWeek").addEventListener("click", waitBeforeNextWeek);
+        document.getElementById("nextWeekModal").addEventListener("click", (event) => {
+          if (event.target === event.currentTarget) waitBeforeNextWeek();
+        });
+        document.getElementById("nextWeekButton").addEventListener("click", () => {
+          if (gameState.week < 6) {
+            showNextWeekPrompt();
+          } else {
+            resetProgressOnStart = false;
+            gameState.started = false;
+            gameState.phase = "script";
+            persistGameState();
+            openSetup();
+          }
+        });
+        document.getElementById("generateCardButton").addEventListener("click", generateStoryCard);
+        document.getElementById("saveStoryCard").addEventListener("click", saveStoryCard);
+        document.getElementById("printStoryCard").addEventListener("click", printStoryCard);
+        document.getElementById("closeStoryCard").addEventListener("click", closeStoryCard);
+        document.getElementById("closeSparkOptions").addEventListener("click", closeSparkOptions);
+        document.getElementById("exportExperimentLog").addEventListener("click", exportExperimentLog);
+        document.getElementById("sparkOptionsModal").addEventListener("click", (event) => {
+          if (event.target === event.currentTarget) {
+            closeSparkOptions();
+          }
+        });
+        document.getElementById("storyCardModal").addEventListener("click", (event) => {
+          if (event.target === event.currentTarget) {
+            closeStoryCard();
+          }
+        });
+        document.getElementById("testConnection").addEventListener("click", testConnection);
+        document.getElementById("fetchModels").addEventListener("click", handleFetchModels);
+        document.getElementById("exportData").addEventListener("click", exportLocalData);
+        document.getElementById("importData").addEventListener("click", () => {
+          document.getElementById("importFile").click();
+        });
+        document.getElementById("importFile").addEventListener("change", (event) => {
+          importLocalData(event.target.files[0]);
+          event.target.value = "";
+        });
+        document.getElementById("modelPicker").addEventListener("change", (event) => {
+          if (event.target.value) {
+            document.getElementById("modelName").value = event.target.value;
+          }
+        });
+        document.getElementById("sparkButton").addEventListener("click", expandChildInput);
+        document.getElementById("toggleApiKey").addEventListener("click", (event) => {
+          const keyInput = document.getElementById("apiKey");
+          const isVisible = keyInput.type === "text";
+          keyInput.type = isVisible ? "password" : "text";
+          event.currentTarget.textContent = isVisible ? "显示" : "隐藏";
+          event.currentTarget.setAttribute("aria-label", isVisible ? "显示 API Key" : "隐藏 API Key");
+        });
+        settingsForm.addEventListener("submit", (event) => {
+          event.preventDefault();
+          try {
+            saveConfig(getConfigFromForm());
+            showApiStatus("配置已保存在当前浏览器。", "success");
+          } catch (error) {
+            showApiStatus(`保存失败：${error.message}`, "error");
+          }
+        });
+        settingsModal.addEventListener("click", (event) => {
+          if (event.target === settingsModal) {
+            closeSettings();
+          }
+        });
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "Escape" && !settingsModal.classList.contains("hidden")) {
+            closeSettings();
+          }
+          if (event.key === "Escape" && !document.getElementById("saveSlotsModal").classList.contains("hidden")) {
+            closeSaveSlots();
+          }
+          if (event.key === "Escape" && !document.getElementById("dialogueHistoryModal").classList.contains("hidden")) {
+            closeDialogueHistory();
+          }
+          if (event.key === "Escape" && !document.getElementById("nextWeekModal").classList.contains("hidden")) {
+            waitBeforeNextWeek();
+          }
+          if (
+            (event.ctrlKey || event.metaKey) &&
+            event.key === "Enter" &&
+            event.target?.id === "childInput" &&
+            gameState.phase === "freeInput"
+          ) {
+            document.getElementById("messageForm").requestSubmit();
+          }
+          const modalOpen = ["setupModal", "settingsModal", "storyCardModal", "sparkOptionsModal", "saveSlotsModal", "dialogueHistoryModal", "nextWeekModal"].some(
+            (id) => !document.getElementById(id).classList.contains("hidden"),
+          );
+          const targetIsInteractive =
+            event.target instanceof Element && Boolean(event.target.closest("button, a, input, textarea, select"));
+          if (
+            event.code === "Space" &&
+            !modalOpen &&
+            !targetIsInteractive &&
+            (gameState.phase === "script" || gameState.phase === "normalEnding")
+          ) {
+            event.preventDefault();
+            advanceDialogue();
+          }
+        });
+      }
+
+      initialize();
+    </script>
+  </body>
+</html>
