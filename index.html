@@ -1,0 +1,1488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>网络疑病症 - 周一：AI健康助手的边界</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --dialogue-bg: rgba(20, 20, 30, 0.85);
+      --dialogue-border: rgba(255, 255, 255, 0.12);
+      --text-primary: #f5f0e8;
+      --text-secondary: #c8c0b0;
+      --accent: #e8c56d;
+      --accent-hover: #f0d48a;
+      --btn-bg: rgba(40, 40, 55, 0.9);
+      --btn-hover: rgba(60, 60, 80, 0.95);
+      --btn-border: rgba(232, 197, 109, 0.3);
+      --portrait-border: rgba(232, 197, 109, 0.2);
+    }
+
+    @font-face {
+      font-family: 'VN-Font';
+      src: local('Microsoft YaHei'), local('PingFang SC'), local('Noto Sans SC'), local('Hiragino Sans GB');
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      font-family: 'VN-Font', sans-serif;
+      background: #0a0a0f;
+      color: var(--text-primary);
+    }
+
+    #game {
+      position: relative;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* Background Layer */
+    .bg-layer {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      transition: opacity 0.8s ease-in-out;
+      opacity: 0;
+      will-change: opacity;
+    }
+
+    .bg-layer.active {
+      opacity: 1;
+    }
+
+    /* Character Portrait */
+    .portrait-layer {
+      position: absolute;
+      bottom: 140px;
+      right: 4%;
+      max-height: 65vh;
+      max-width: 35vw;
+      opacity: 0;
+      transform: translateY(30px) scale(0.95);
+      transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+      pointer-events: none;
+      filter: drop-shadow(0 20px 40px rgba(0,0,0,0.4));
+      border-radius: 4px;
+      border: 1px solid var(--portrait-border);
+    }
+
+    .portrait-layer.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+
+    /* Dialogue Box */
+    .dialogue-box {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 960px;
+      min-height: 160px;
+      padding: 24px 32px;
+      background: var(--dialogue-bg);
+      backdrop-filter: blur(20px) saturate(120%);
+      -webkit-backdrop-filter: blur(20px) saturate(120%);
+      border-top: 1px solid var(--dialogue-border);
+      border-radius: 16px 16px 0 0;
+      box-shadow: 0 -10px 40px rgba(0,0,0,0.5),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      cursor: pointer;
+      z-index: 10;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dialogue-box:hover {
+      transform: translateX(-50%) translateY(-2px);
+      box-shadow: 0 -15px 50px rgba(0,0,0,0.6),
+                  inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+
+    .dialogue-box.hidden {
+      display: none;
+    }
+
+    .dialogue-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.9;
+    }
+
+    .dialogue-text {
+      font-size: 17px;
+      line-height: 1.85;
+      color: var(--text-primary);
+      letter-spacing: 0.02em;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .dialogue-text .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.2em;
+      background: var(--accent);
+      margin-left: 2px;
+      vertical-align: text-bottom;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 50% { opacity: 1; }
+      51%, 100% { opacity: 0; }
+    }
+
+    .dialogue-hint {
+      position: absolute;
+      bottom: 14px;
+      right: 20px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      opacity: 0.5;
+      animation: pulse 2s infinite;
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+
+    .dialogue-hint::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-right: 2px solid currentColor;
+      border-bottom: 2px solid currentColor;
+      transform: rotate(45deg);
+      animation: bounce 1s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% { transform: rotate(45deg) translate(0, 0); }
+      50% { transform: rotate(45deg) translate(4px, 4px); }
+    }
+
+    /* Options Container */
+    .options-container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 85%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      z-index: 20;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .options-container.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .option-btn {
+      padding: 18px 24px;
+      background: var(--btn-bg);
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid var(--btn-border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 16px;
+      line-height: 1.6;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .option-btn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(232, 197, 109, 0.08), transparent);
+      transform: translateX(-100%);
+      transition: transform 0.5s ease;
+    }
+
+    .option-btn:hover {
+      background: var(--btn-hover);
+      border-color: var(--accent);
+      transform: translateX(8px);
+      box-shadow: 0 8px 30px rgba(232, 197, 109, 0.15);
+    }
+
+    .option-btn:hover::before {
+      transform: translateX(100%);
+    }
+
+    .option-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    .option-btn.correct {
+      border-color: #4ade80;
+      background: rgba(34, 80, 50, 0.4);
+    }
+
+    .option-btn.incorrect {
+      border-color: #f87171;
+      background: rgba(80, 34, 34, 0.4);
+    }
+
+    /* Accordion (Knowledge Card W1-06) */
+    .knowledge-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      width: 90%;
+      max-width: 720px;
+      max-height: 85vh;
+      background: rgba(18, 18, 28, 0.95);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--dialogue-border);
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+      overflow: hidden;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .knowledge-card.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .knowledge-header {
+      padding: 28px 32px;
+      border-bottom: 1px solid var(--dialogue-border);
+      background: linear-gradient(180deg, rgba(232, 197, 109, 0.08), transparent);
+    }
+
+    .knowledge-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+      margin-bottom: 6px;
+    }
+
+    .knowledge-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .accordion-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .accordion-item {
+      border: 1px solid var(--btn-border);
+      border-radius: 12px;
+      background: var(--btn-bg);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .accordion-item.open {
+      border-color: var(--accent);
+      box-shadow: 0 4px 20px rgba(232, 197, 109, 0.1);
+    }
+
+    .accordion-header {
+      width: 100%;
+      padding: 18px 24px;
+      background: transparent;
+      border: none;
+      color: var(--text-primary);
+      font-size: 16px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      transition: background 0.2s ease;
+    }
+
+    .accordion-header:hover {
+      background: rgba(232, 197, 109, 0.05);
+    }
+
+    .accordion-header:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+
+    .accordion-icon {
+      width: 20px;
+      height: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--accent);
+      transition: transform 0.3s ease;
+      flex-shrink: 0;
+    }
+
+    .accordion-item.open .accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease-out, padding 0.3s ease;
+    }
+
+    .accordion-item.open .accordion-content {
+      max-height: 500px;
+      padding-bottom: 20px;
+    }
+
+    .accordion-text {
+      padding: 0 24px 8px;
+      font-size: 15px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+
+    .knowledge-continue {
+      padding: 20px 32px;
+      border-top: 1px solid var(--dialogue-border);
+      display: flex;
+      justify-content: center;
+    }
+
+    .continue-btn {
+      padding: 14px 48px;
+      background: linear-gradient(135deg, var(--accent), #d4a850);
+      border: none;
+      border-radius: 50px;
+      color: #1a1510;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 6px 20px rgba(232, 197, 109, 0.3);
+    }
+
+    .continue-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(232, 197, 109, 0.45);
+    }
+
+    .continue-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    /* Summary Card (W1-09) */
+    .summary-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      width: 85%;
+      max-width: 600px;
+      background: rgba(18, 18, 28, 0.95);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--dialogue-border);
+      border-radius: 24px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+      padding: 48px 40px;
+      text-align: center;
+      z-index: 30;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .summary-card.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .summary-icon {
+      width: 64px;
+      height: 64px;
+      margin: 0 auto 24px;
+      color: var(--accent);
+    }
+
+    .summary-text {
+      font-size: 20px;
+      line-height: 1.7;
+      color: var(--text-primary);
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .summary-continue {
+      margin-top: 32px;
+    }
+
+    /* Loading Screen */
+    #loading {
+      position: fixed;
+      inset: 0;
+      background: #0a0a0f;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      transition: opacity 0.5s ease, visibility 0.5s ease;
+    }
+
+    #loading.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .loading-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid rgba(232, 197, 109, 0.15);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .loading-text {
+      margin-top: 20px;
+      font-size: 15px;
+      color: var(--text-secondary);
+    }
+
+    /* Mobile Responsive */
+    @media (max-width: 768px) {
+      .dialogue-box {
+        width: 100%;
+        border-radius: 0;
+        min-height: 140px;
+        padding: 20px 20px 40px;
+      }
+
+      .portrait-layer {
+        max-height: 40vh;
+        max-width: 60vw;
+        right: 5%;
+        bottom: 130px;
+      }
+
+      .options-container {
+        width: 95%;
+      }
+
+      .option-btn {
+        padding: 16px 20px;
+        font-size: 15px;
+      }
+
+      .knowledge-card, .summary-card {
+        width: 95%;
+        padding: 24px 20px;
+      }
+
+      .knowledge-header {
+        padding: 20px 20px;
+      }
+
+      .accordion-header {
+        padding: 16px 20px;
+        font-size: 15px;
+      }
+
+      .accordion-text {
+        padding: 0 20px 16px;
+        font-size: 14px;
+      }
+
+      .summary-text {
+        font-size: 17px;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .dialogue-text {
+        font-size: 15px;
+      }
+
+      .option-btn {
+        font-size: 14px;
+        padding: 14px 18px;
+      }
+
+      .knowledge-title {
+        font-size: 18px;
+      }
+
+      .summary-text {
+        font-size: 16px;
+      }
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <div class="loading-spinner"></div>
+    <div class="loading-text">正在加载剧本...</div>
+  </div>
+
+  <div id="game">
+    <!-- Background Layers -->
+    <div class="bg-layer" id="bg-current"></div>
+    <div class="bg-layer" id="bg-next"></div>
+
+    <!-- Character Portrait -->
+    <img class="portrait-layer" id="portrait" src="" alt="角色立绘">
+
+    <!-- Dialogue Box -->
+    <div class="dialogue-box" id="dialogueBox">
+      <div class="dialogue-name" id="dialogueName"></div>
+      <div class="dialogue-text" id="dialogueText"></div>
+      <div class="dialogue-hint" id="dialogueHint">点击继续</div>
+    </div>
+
+    <!-- Options Container -->
+    <div class="options-container" id="optionsContainer"></div>
+
+    <!-- Knowledge Card (W1-06) -->
+    <div class="knowledge-card" id="knowledgeCard">
+      <div class="knowledge-header">
+        <div class="knowledge-title">AI 健康助手的三条底线</div>
+        <div class="knowledge-subtitle">点击展开查看详细解释</div>
+      </div>
+      <div class="accordion-list" id="accordionList"></div>
+      <div class="knowledge-continue">
+        <button class="continue-btn" id="knowledgeContinue">继续</button>
+      </div>
+    </div>
+
+    <!-- Summary Card (W1-09) -->
+    <div class="summary-card" id="summaryCard">
+      <svg class="summary-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/>
+        <path d="M12 6v6l4 2"/>
+      </svg>
+      <div class="summary-text" id="summaryText"></div>
+      <div class="summary-continue">
+        <button class="continue-btn" id="summaryContinue">下一关</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== GAME DATA ====================
+    const NODES = [
+      {
+        "id": "W1-01",
+        "name": "情境开场",
+        "scene": "旁白 · 卧室夜景，手机屏幕亮着",
+        "dialogue": "凌晨 1 点，胸口又闷了一下。这不是第一次了——上个月体检，医生说“问题不大”。手机就在手边。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": null,
+        "next_node": "W1-02",
+        "notes": "引入网络疑病症真实场景",
+        "hardcore": "手册 H1.6 焦虑螺旋图",
+        "time": 12.0,
+        "planning_notes": "两句旁白：先给情境，再给“查过也没用”的历史"
+      },
+      {
+        "id": "W1-02",
+        "name": "玩家选择",
+        "scene": "玩家 · 手机特写",
+        "dialogue": "手机就在手边。你想起朋友推荐的“安康助手”，反正睡不着。此刻你会怎么做？",
+        "options": "A 打开安康助手，把症状描述一下\nB 记在备忘录里，等明天再说\nC 直接搜索“胸口闷 猝死”",
+        "feedback_selected": "无（动机探测）",
+        "feedback_explanation": "没有对错。先记住这个瞬间：你是想弄清楚，还是想让自己不害怕？这个区别，后面每一关都会用到。",
+        "next_node": "W1-03",
+        "notes": "动机澄清：查证 vs 求安心",
+        "hardcore": "H1.6 / 手册第1次“什么是健康焦虑”",
+        "time": 20.0,
+        "planning_notes": "三个选项都通向同一节点，不评判；区分“查证”与“求安心”"
+      },
+      {
+        "id": "W1-03",
+        "name": "NPC 台词",
+        "scene": "安康助手 · AI 助手界面",
+        "dialogue": "你好，我是安康助手。收到你的描述：胸痛可能是心梗前兆，建议立即就医，请不要拖延。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": "W1-04",
+        "next_node": "W1-04",
+        "notes": "公开案例改写",
+        "hardcore": 8.0,
+        "time": "用真实感强的口吻",
+        "planning_notes": "口吻热情笃定；一句问候＋一句结论，营造“真人感”"
+      },
+      {
+        "id": "W1-04",
+        "name": "知识点卡",
+        "scene": "知识卡 · 全屏卡片",
+        "dialogue": "AI 的答案不是查出来的，是“续写”出来的——它预测“最像答案”的下一个字。说白了：它擅长把话说通顺，不擅长核实真假。",
+        "options": null,
+        "feedback_selected": "（自动进入下一节点）",
+        "feedback_explanation": "W1-05",
+        "next_node": "W1-05",
+        "notes": "文献：生成式模型原理通俗说明",
+        "hardcore": 15.0,
+        "time": "一句话讲完，不展开技术",
+        "planning_notes": "术语首次出现，跟一句白话解释"
+      },
+      {
+        "id": "W1-05",
+        "name": "核心交互",
+        "scene": "玩家 · 对照清单（多选）",
+        "dialogue": "以下 4 件事，AI 健康助手做不到哪几件？（多选）",
+        "options": "A 查体，摸一摸你的腹部\nB 核对你所在地区的就诊指引和挂号规则\nC 组织一段通顺、像模像样的解释\nD 对它的结论承担责任",
+        "feedback_selected": "A、B、D",
+        "feedback_explanation": "对：查体、地方指引、担责，它都做不到。错：它最擅长的恰恰是把话说通顺——通顺不等于可靠。下一步：记住这三个边界。",
+        "next_node": "W1-06",
+        "notes": "AI 能力边界的 3 个维度",
+        "hardcore": "H2.2 / 手册第2次",
+        "time": 45.0,
+        "planning_notes": "C 是“看起来合理但错”的干扰项"
+      },
+      {
+        "id": "W1-06",
+        "name": "反馈解释",
+        "scene": "知识卡 · 逐条展开",
+        "dialogue": "不能查体 → 症状全靠你自己转述，它听到的只是文字；不能保证时效 → 指南年年更新，它学的是旧资料；不担责 → 出了问题，后果由你承担。下一步：看到笃定的答案，先问一句“它做得到吗”。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": "W1-07",
+        "next_node": "W1-07",
+        "notes": "同上",
+        "hardcore": 30.0,
+        "time": "每条一句，不做长段落",
+        "planning_notes": "三段式：对错→原因→下一步；每条一句"
+      },
+      {
+        "id": "W1-07",
+        "name": "知识点卡",
+        "scene": "知识卡 · 渠道对照图",
+        "dialogue": "找权威信息，认三个标记：发布机构、发布日期、有没有给出处。没有标记的，一律先存疑。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": "W1-08",
+        "next_node": "W1-08",
+        "notes": "国家卫健委官网 / 临床指南的一般特征",
+        "hardcore": 15.0,
+        "time": "配一张两栏对照图",
+        "planning_notes": "配两栏对照图（对应素材 S1-03）"
+      },
+      {
+        "id": "W1-08",
+        "name": "迁移情境",
+        "scene": "玩家 · 聊天界面（迁移情境）",
+        "dialogue": "朋友发来一张截图：“AI 说你这症状要立刻急诊。”你会先做什么？",
+        "options": "A 跟着去急诊，宁可信其有\nB 先看截图里有没有机构、日期、出处\nC 再问一次安康助手，看它怎么说",
+        "feedback_selected": "B",
+        "feedback_explanation": "对：先看出处，再决定信不信。错：跟着走，是放弃判断；再问一遍 AI，只是换个说法巩固它的结论。下一步：养成“先看出处”的默认动作。",
+        "next_node": "W1-09",
+        "notes": "迁移：把识别标准用起来",
+        "hardcore": "W1-07",
+        "time": 40.0,
+        "planning_notes": "本关分水岭节点；C 为干扰项"
+      },
+      {
+        "id": "W1-09",
+        "name": "小结",
+        "scene": "知识卡 · 全屏小结卡",
+        "dialogue": "今天只记一句：AI 擅长组织语言，不擅长替你判断。把判断权，留在自己手里。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": "W1-10",
+        "next_node": "W1-10",
+        "notes": "—",
+        "hardcore": 10.0,
+        "time": "做成可截图保存的卡片",
+        "planning_notes": "做成可截图保存的卡片"
+      },
+      {
+        "id": "W1-10",
+        "name": "作业",
+        "scene": "玩家 · 表单（本周作业）",
+        "dialogue": "记录一次你用 AI 查健康的经历，三栏填写：① 我问了什么 ② 它答了什么 ③ 我后来怎么做了。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": "W1-11",
+        "next_node": "W1-11",
+        "notes": "H2.4 作业思路",
+        "hardcore": 20.0,
+        "time": "三栏，不超过 3 分钟填完",
+        "planning_notes": "三栏各一行，不超过 3 分钟；为第 2 周“拟人化”做铺垫"
+      },
+      {
+        "id": "W1-11",
+        "name": "钩子",
+        "scene": "旁白 · 转场",
+        "dialogue": "下一关：为什么它听起来那么懂你？——你的“心头一暖”，下周拆给你看。",
+        "options": null,
+        "feedback_selected": null,
+        "feedback_explanation": "（进入 W2）",
+        "next_node": null,
+        "notes": "—",
+        "hardcore": 8.0,
+        "time": "留悬念，提升完播",
+        "planning_notes": "留悬念，提升完播"
+      }
+    ];
+
+    // ==================== CONFIG ====================
+    const BG_MAP = {
+      '卧室夜景': '图片/卧室夜景.png',
+      '手机特写': '图片/手机特写.png',
+      '朋友聊天页面': '图片/朋友聊天页面.png',
+      '对照渠道图': '图片/对照渠道图.png',
+      '全屏小结卡': '图片/全屏小结卡.png',
+      'AI 助手界面': '图片/ai助手页面.png',
+      '全屏卡片': '图片/全屏小结卡.png',
+      '渠道对照图': '图片/对照渠道图.png',
+      '转场': '图片/卧室夜景.png',
+      '表单': '图片/ai助手页面.png',
+      '对照清单': '图片/ai助手页面.png',
+      '逐条展开': '图片/ai助手页面.png',
+      '聊天界面': '图片/朋友聊天页面.png'
+    };
+
+    const PORTRAIT_MAP = {
+      'W1-03': '图片/ai助手03.png',
+      'W1-04': '图片/ai助手04.png',
+      'W1-05': '图片/助手05.png',
+      'W1-06': '图片/ai助手06.png',
+      'W1-07': '图片/ai助手07.png',
+      'W1-09': '图片/ai助手09.png',
+      'W1-10': '图片/ai助手03.png'
+    };
+
+    const NAME_MAP = {
+      '旁白': '旁白',
+      '玩家': '你',
+      '安康助手': '安康助手',
+      '知识卡': '系统',
+      'NPC': '安康助手'
+    };
+
+    // Accordion data for W1-06
+    const ACCORDION_DATA = [
+      {
+        title: '不能查体',
+        content: '症状全靠你自己转述，它听到的只是文字。没有触诊、听诊、叩诊，任何“诊断”都只是基于你描述的文字概率推演。'
+      },
+      {
+        title: '不能保证时效',
+        content: '医学指南年年更新，它学的是旧资料。训练数据有截止日期，无法获取最新版临床路径、最新药物警示、最新地区就诊政策。'
+      },
+      {
+        title: '不担责',
+        content: '出了问题，后果由你承担。AI 不是医疗器械，没有执业资质，不承担法律责任。它的免责声明比回答还长。'
+      }
+    ];
+
+    // ==================== GAME STATE ====================
+    let currentNodeIndex = 0;
+    let isTyping = false;
+    let typingTimer = null;
+    let currentTypingText = '';
+    let currentTypingIndex = 0;
+    let waitingForClick = false;
+    let isOptionsMode = false;
+    let isKnowledgeCardMode = false;
+    let isSummaryMode = false;
+    let selectedOption = null;
+    let preloadedImages = {};
+    // Two-step feedback state
+    let feedbackStep = 0; // 0=none, 1=first feedback shown, 2=next step shown
+    let feedbackNodeId = null;
+    let feedbackIsCorrect = false;
+
+    // DOM Elements
+    const bgCurrent = document.getElementById('bg-current');
+    const bgNext = document.getElementById('bg-next');
+    const portrait = document.getElementById('portrait');
+    const dialogueBox = document.getElementById('dialogueBox');
+    const dialogueName = document.getElementById('dialogueName');
+    const dialogueText = document.getElementById('dialogueText');
+    const dialogueHint = document.getElementById('dialogueHint');
+    const optionsContainer = document.getElementById('optionsContainer');
+    const knowledgeCard = document.getElementById('knowledgeCard');
+    const accordionList = document.getElementById('accordionList');
+    const knowledgeContinue = document.getElementById('knowledgeContinue');
+    const summaryCard = document.getElementById('summaryCard');
+    const summaryText = document.getElementById('summaryText');
+    const summaryContinue = document.getElementById('summaryContinue');
+    const loading = document.getElementById('loading');
+
+    // ==================== UTILITIES ====================
+    function getBgKey(scene) {
+      if (!scene) return '卧室夜景';
+      for (const [key, value] of Object.entries(BG_MAP)) {
+        if (scene.includes(key)) return key;
+      }
+      return '卧室夜景';
+    }
+
+    function getBgUrl(scene) {
+      const key = getBgKey(scene);
+      return BG_MAP[key] || BG_MAP['卧室夜景'];
+    }
+
+    function preloadImage(url) {
+      if (preloadedImages[url]) return preloadedImages[url];
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => { preloadedImages[url] = img; resolve(img); };
+        img.onerror = () => resolve(null);
+        img.src = url;
+      });
+    }
+
+    async function preloadAllImages() {
+      const urls = new Set();
+      Object.values(BG_MAP).forEach(u => urls.add(u));
+      Object.values(PORTRAIT_MAP).forEach(u => urls.add(u));
+      await Promise.all(Array.from(urls).map(preloadImage));
+    }
+
+    function setBackground(url, instant = false) {
+      if (instant) {
+        bgCurrent.style.backgroundImage = `url('${url}')`;
+        bgCurrent.classList.add('active');
+        bgNext.classList.remove('active');
+        bgNext.style.backgroundImage = '';
+      } else {
+        bgNext.style.backgroundImage = `url('${url}')`;
+        bgNext.classList.add('active');
+        setTimeout(() => {
+          bgCurrent.style.backgroundImage = `url('${url}')`;
+          bgCurrent.classList.add('active');
+          bgNext.classList.remove('active');
+          bgNext.style.backgroundImage = '';
+        }, 400);
+      }
+    }
+
+    function setPortrait(nodeId) {
+      const url = PORTRAIT_MAP[nodeId];
+      if (url) {
+        portrait.src = url;
+        portrait.classList.add('visible');
+      } else {
+        portrait.classList.remove('visible');
+        portrait.src = '';
+      }
+    }
+
+    function parseOptions(optionsText) {
+      if (!optionsText) return [];
+      return optionsText.split('\n').map(line => line.trim()).filter(Boolean);
+    }
+
+    function parseFeedbackOptions(feedback) {
+      if (!feedback) return [];
+      return feedback.replace(/[、，,]/g, ' ').split(/\s+/).filter(Boolean);
+    }
+
+    // ==================== TYPING EFFECT ====================
+    let typingResolve = null;
+    let typingCallback = null;
+
+    function typeText(element, text, speed = 28, callback) {
+      return new Promise((resolve) => {
+        isTyping = true;
+        currentTypingText = text;
+        currentTypingIndex = 0;
+        typingResolve = resolve;
+        typingCallback = callback;
+        element.innerHTML = '';
+
+        function type() {
+          if (currentTypingIndex < currentTypingText.length) {
+            element.textContent += currentTypingText[currentTypingIndex];
+            currentTypingIndex++;
+            typingTimer = setTimeout(type, speed);
+          } else {
+            isTyping = false;
+            element.innerHTML = text; // Remove cursor
+            typingResolve = null;
+            typingCallback = null;
+            if (callback) callback();
+            resolve();
+          }
+        }
+        type();
+      });
+    }
+
+    function skipTyping() {
+      if (isTyping) {
+        if (typingTimer) clearTimeout(typingTimer);
+        dialogueText.innerHTML = currentTypingText;
+        isTyping = false;
+        if (typingCallback) {
+          typingCallback();
+          typingCallback = null;
+        }
+        if (typingResolve) {
+          typingResolve();
+          typingResolve = null;
+        }
+      }
+    }
+
+    // ==================== NODE HANDLERS ====================
+    async function showNode(nodeIndex) {
+      if (nodeIndex >= NODES.length) return;
+
+      const node = NODES[nodeIndex];
+      currentNodeIndex = nodeIndex;
+
+      // Reset UI states
+      hideAllSpecialUI();
+      dialogueBox.classList.remove('hidden');
+      waitingForClick = false;
+      isOptionsMode = false;
+      isKnowledgeCardMode = false;
+      isSummaryMode = false;
+      selectedOption = null;
+      // Reset feedback state
+      feedbackStep = 0;
+      feedbackNodeId = null;
+
+      // Background
+      const bgUrl = getBgUrl(node.scene);
+      setBackground(bgUrl, nodeIndex === 0);
+
+      // Portrait
+      setPortrait(node.id);
+
+      // Character name
+      let charName = '旁白';
+      if (node.scene.includes('安康助手') || node.scene.includes('NPC')) {
+        charName = '安康助手';
+      } else if (node.scene.includes('玩家') || node.scene.includes('你')) {
+        charName = '你';
+      } else if (node.scene.includes('知识卡')) {
+        charName = '系统';
+      }
+      dialogueName.textContent = charName;
+
+      // Handle special nodes
+      if (node.id === 'W1-06') {
+        await showKnowledgeCard();
+        return;
+      }
+
+      if (node.id === 'W1-09') {
+        await showSummaryCard(node.dialogue);
+        return;
+      }
+
+      // Dialogue text with typing effect
+      await typeText(dialogueText, node.dialogue || '', 25, () => {
+        waitingForClick = true;
+        dialogueHint.style.display = 'flex';
+      });
+
+      // Handle options nodes
+      if (node.options) {
+        isOptionsMode = true;
+        waitingForClick = false;
+        dialogueHint.style.display = 'none';
+        showOptions(node);
+      }
+    }
+
+    function showOptions(node) {
+      const options = parseOptions(node.options);
+      optionsContainer.innerHTML = '';
+
+      if (node.id === 'W1-05') {
+        // Multi-select for W1-05
+        const selectedSet = new Set();
+        
+        options.forEach((opt, idx) => {
+          const wrapper = document.createElement('div');
+          wrapper.style.display = 'flex';
+          wrapper.style.alignItems = 'center';
+          wrapper.style.gap = '12px';
+          
+          const checkbox = document.createElement('input');
+          checkbox.type = 'checkbox';
+          checkbox.id = `opt-${idx}`;
+          checkbox.dataset.index = idx;
+          checkbox.style.width = '20px';
+          checkbox.style.height = '20px';
+          checkbox.style.accentColor = 'var(--accent)';
+          checkbox.style.cursor = 'pointer';
+          checkbox.style.flexShrink = '0';
+          
+          const label = document.createElement('label');
+          label.htmlFor = `opt-${idx}`;
+          label.className = 'option-btn';
+          label.style.flex = '1';
+          label.style.cursor = 'pointer';
+          label.textContent = opt;
+          
+          checkbox.addEventListener('change', () => {
+            if (checkbox.checked) {
+              selectedSet.add(idx);
+            } else {
+              selectedSet.delete(idx);
+            }
+            submitBtn.disabled = selectedSet.size === 0;
+          });
+          
+          wrapper.appendChild(checkbox);
+          wrapper.appendChild(label);
+          optionsContainer.appendChild(wrapper);
+        });
+        
+        // Submit button
+        const submitWrapper = document.createElement('div');
+        submitWrapper.style.marginTop = '16px';
+        submitWrapper.style.display = 'flex';
+        submitWrapper.style.justifyContent = 'center';
+        
+        const submitBtn = document.createElement('button');
+        submitBtn.className = 'continue-btn';
+        submitBtn.textContent = '确认提交';
+        submitBtn.disabled = true;
+        submitBtn.style.padding = '12px 40px';
+        submitBtn.style.opacity = '0.5';
+        submitBtn.addEventListener('click', () => {
+          handleMultiSelectSubmit(node, Array.from(selectedSet), options);
+        });
+        
+        submitWrapper.appendChild(submitBtn);
+        optionsContainer.appendChild(submitWrapper);
+        // Store submitBtn reference for later
+        optionsContainer.dataset.submitBtn = 'true';
+      } else {
+        // Single select for other nodes
+        options.forEach((opt, idx) => {
+          const btn = document.createElement('button');
+          btn.className = 'option-btn';
+          btn.textContent = opt;
+          btn.dataset.index = idx;
+          btn.dataset.fullText = opt;
+          btn.addEventListener('click', () => handleOptionClick(node, idx, opt));
+          optionsContainer.appendChild(btn);
+        });
+      }
+
+      optionsContainer.classList.add('visible');
+    }
+
+    function handleOptionClick(node, index, optionText) {
+      if (selectedOption !== null) return;
+      selectedOption = index;
+
+      const buttons = optionsContainer.querySelectorAll('.option-btn');
+      buttons.forEach((btn, i) => {
+        btn.style.pointerEvents = 'none';
+        if (i === index) {
+          btn.style.transform = 'translateX(8px) scale(1.02)';
+        } else {
+          btn.style.opacity = '0.4';
+        }
+      });
+
+      // Determine correct answers
+      let correctAnswers = [];
+      if (node.id === 'W1-08') {
+        correctAnswers = ['B'];
+      } else if (node.id === 'W1-02') {
+        correctAnswers = ['A', 'B', 'C']; // All valid, no wrong answer
+      }
+
+      const selectedLetter = optionText.trim().charAt(0).toUpperCase();
+      const isCorrect = correctAnswers.length === 0 || correctAnswers.includes(selectedLetter);
+
+      buttons[index].classList.add(isCorrect ? 'correct' : 'incorrect');
+
+      // Show feedback after a brief delay
+      setTimeout(() => {
+        optionsContainer.classList.remove('visible');
+        isOptionsMode = false;
+        // Use differentiated feedback for nodes with right/wrong answers
+        if (node.id === 'W1-08') {
+          showSingleSelectFeedback(node, isCorrect);
+        } else {
+          showFeedback(node, isCorrect, selectedLetter);
+        }
+      }, 800);
+    }
+
+    function showSingleSelectFeedback(node, isCorrect) {
+      feedbackNodeId = node.id;
+      feedbackIsCorrect = isCorrect;
+      feedbackStep = 1;
+      
+      let feedbackText = '';
+      
+      if (node.id === 'W1-08') {
+        if (isCorrect) {
+          feedbackText = '对：先看出处，再决定信不信。';
+        } else {
+          feedbackText = '错：跟着走，是放弃判断；再问一遍 AI，只是换个说法巩固它的结论。';
+        }
+      }
+      
+      waitingForClick = false;
+      dialogueHint.style.display = 'none';
+      typeText(dialogueText, feedbackText, 22, () => {
+        waitingForClick = true;
+        dialogueHint.style.display = 'flex';
+      });
+    }
+
+    function handleMultiSelectSubmit(node, selectedIndices, options) {
+      const correctAnswers = new Set([0, 1, 3]); // A, B, D (indices 0, 1, 3)
+      const selectedSet = new Set(selectedIndices);
+      
+      // Check if exactly correct: all correct selected AND no incorrect selected
+      const isFullyCorrect = selectedSet.size === correctAnswers.size && 
+        [...selectedSet].every(idx => correctAnswers.has(idx));
+      
+      // Disable all checkboxes
+      const checkboxes = optionsContainer.querySelectorAll('input[type="checkbox"]');
+      checkboxes.forEach(cb => cb.disabled = true);
+      
+      // Disable submit button
+      const submitBtn = optionsContainer.querySelector('.continue-btn');
+      if (submitBtn) submitBtn.disabled = true;
+      
+      // Show correct/incorrect styling on labels
+      const labels = optionsContainer.querySelectorAll('.option-btn');
+      labels.forEach((label, idx) => {
+        const isCorrectOption = correctAnswers.has(idx);
+        const isSelected = selectedSet.has(idx);
+        
+        if (isSelected) {
+          if (isCorrectOption) {
+            label.classList.add('correct');
+          } else {
+            label.classList.add('incorrect');
+          }
+        } else if (isCorrectOption) {
+          // Show missed correct answers
+          label.style.borderColor = 'var(--accent)';
+          label.style.background = 'rgba(232, 197, 109, 0.1)';
+        }
+      });
+
+      // Show feedback after delay
+      setTimeout(() => {
+        optionsContainer.classList.remove('visible');
+        isOptionsMode = false;
+        showMultiSelectFeedback(node, isFullyCorrect);
+      }, 1000);
+    }
+
+    function showMultiSelectFeedback(node, isCorrect) {
+      feedbackNodeId = node.id;
+      feedbackIsCorrect = isCorrect;
+      feedbackStep = 1;
+      
+      let feedbackText = '';
+      
+      if (node.id === 'W1-05') {
+        if (isCorrect) {
+          feedbackText = '查体、地方指引、担责，它都做不到。';
+        } else {
+          feedbackText = '它最擅长的恰恰是把话说通顺——通顺不等于可靠。';
+        }
+      }
+      
+      waitingForClick = false;
+      dialogueHint.style.display = 'none';
+      typeText(dialogueText, feedbackText, 22, () => {
+        waitingForClick = true;
+        dialogueHint.style.display = 'flex';
+      });
+    }
+
+    function showFeedback(node, isCorrect, selectedLetter) {
+      let feedbackText = '';
+
+      if (node.id === 'W1-02') {
+        feedbackText = node.feedback_explanation || '没有对错，只是记下你的选择。';
+      } else if (node.id === 'W1-08') {
+        feedbackText = node.feedback_explanation || '';
+      } else {
+        feedbackText = node.feedback_explanation || '';
+      }
+
+      if (feedbackText) {
+        waitingForClick = false;
+        dialogueHint.style.display = 'none';
+        typeText(dialogueText, feedbackText, 22, () => {
+          waitingForClick = true;
+          dialogueHint.style.display = 'flex';
+        });
+      } else {
+        // No feedback, proceed to next node
+        setTimeout(() => goToNextNode(node), 500);
+      }
+    }
+
+    async function showKnowledgeCard() {
+      isKnowledgeCardMode = true;
+      dialogueBox.classList.add('hidden');
+      portrait.classList.remove('visible');
+
+      // Build accordion items
+      accordionList.innerHTML = '';
+      ACCORDION_DATA.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'accordion-item';
+        div.innerHTML = `
+          <button class="accordion-header" data-index="${idx}">
+            <span>${item.title}</span>
+            <svg class="accordion-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="accordion-content">
+            <div class="accordion-text">${item.content}</div>
+          </div>
+        `;
+        const header = div.querySelector('.accordion-header');
+        header.addEventListener('click', () => toggleAccordion(div));
+        accordionList.appendChild(div);
+      });
+
+      knowledgeCard.classList.add('visible');
+
+      knowledgeContinue.onclick = () => {
+        knowledgeCard.classList.remove('visible');
+        goToNextNode(NODES[currentNodeIndex]);
+      };
+    }
+
+    function toggleAccordion(item) {
+      const isOpen = item.classList.toggle('open');
+      // Close others
+      document.querySelectorAll('.accordion-item').forEach(other => {
+        if (other !== item) other.classList.remove('open');
+      });
+    }
+
+    async function showSummaryCard(text) {
+      isSummaryMode = true;
+      dialogueBox.classList.add('hidden');
+      portrait.classList.remove('visible');
+
+      summaryText.textContent = text;
+      summaryCard.classList.add('visible');
+
+      summaryContinue.onclick = () => {
+        summaryCard.classList.remove('visible');
+        goToNextNode(NODES[currentNodeIndex]);
+      };
+    }
+
+    function hideAllSpecialUI() {
+      optionsContainer.classList.remove('visible');
+      knowledgeCard.classList.remove('visible');
+      summaryCard.classList.remove('visible');
+      dialogueBox.classList.remove('hidden');
+    }
+
+    function goToNextNode(node) {
+      const nextId = node.next_node;
+      if (!nextId || nextId === '（进入 W2）' || nextId === '串联下一关') {
+        // End of game
+        showEnding();
+        return;
+      }
+
+      const nextIndex = NODES.findIndex(n => n.id === nextId);
+      if (nextIndex !== -1) {
+        showNode(nextIndex);
+      } else {
+        console.warn('Next node not found:', nextId);
+        showEnding();
+      }
+    }
+
+    function showEnding() {
+      dialogueBox.classList.add('hidden');
+      portrait.classList.remove('visible');
+      setBackground('图片/卧室夜景.png', true);
+
+      const endingCard = document.createElement('div');
+      endingCard.style.cssText = `
+        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        text-align: center; padding: 40px; max-width: 500px;
+        background: rgba(18,18,28,0.95); backdrop-filter: blur(25px);
+        border: 1px solid var(--dialogue-border); border-radius: 24px;
+        box-shadow: 0 30px 80px rgba(0,0,0,0.6); z-index: 50;
+      `;
+      endingCard.innerHTML = `
+        <h2 style="color: var(--accent); margin-bottom: 16px; font-size: 24px;">第 一 周 完</h2>
+        <p style="color: var(--text-secondary); line-height: 1.8; margin-bottom: 24px;">
+          你学会了在 AI 面前保留判断权。<br>
+          下一关：为什么它听起来那么懂你？
+        </p>
+        <button class="continue-btn" onclick="location.reload()">重新开始</button>
+      `;
+      document.getElementById('game').appendChild(endingCard);
+    }
+
+    // ==================== EVENT HANDLERS ====================
+    function handleDialogueClick() {
+      if (isTyping) {
+        skipTyping();
+        return;
+      }
+      
+      // Handle two-step feedback flow
+      if (feedbackStep === 1) {
+        // Show "下一步" text
+        feedbackStep = 2;
+        waitingForClick = false;
+        dialogueHint.style.display = 'none';
+        let nextStepText = '';
+        if (feedbackNodeId === 'W1-08') {
+          nextStepText = '下一步：养成“先看出处”的默认动作。';
+        } else if (feedbackNodeId === 'W1-05') {
+          nextStepText = '下一步：记住这三个边界。';
+        }
+        typeText(dialogueText, nextStepText, 22, () => {
+          waitingForClick = true;
+          dialogueHint.style.display = 'flex';
+        });
+        return;
+      }
+      
+      if (feedbackStep === 2) {
+        // Proceed to next node
+        feedbackStep = 0;
+        feedbackNodeId = null;
+        waitingForClick = false;
+        dialogueHint.style.display = 'none';
+        goToNextNode(NODES[currentNodeIndex]);
+        return;
+      }
+      
+      if (waitingForClick && !isOptionsMode && !isKnowledgeCardMode && !isSummaryMode) {
+        waitingForClick = false;
+        dialogueHint.style.display = 'none';
+        goToNextNode(NODES[currentNodeIndex]);
+      }
+    }
+
+    function handleKeyDown(e) {
+      if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowRight') {
+        e.preventDefault();
+        handleDialogueClick();
+      }
+      if (e.key === 'Escape') {
+        if (isKnowledgeCardMode) {
+          knowledgeCard.classList.remove('visible');
+          goToNextNode(NODES[currentNodeIndex]);
+        } else if (isSummaryMode) {
+          summaryCard.classList.remove('visible');
+          goToNextNode(NODES[currentNodeIndex]);
+        }
+      }
+    }
+
+    // ==================== INIT ====================
+    async function init() {
+      await preloadAllImages();
+      loading.classList.add('hidden');
+      showNode(0);
+    }
+
+    // Click anywhere on game screen to advance (typical VN behavior)
+    document.getElementById('game').addEventListener('click', (e) => {
+      // Ignore clicks on interactive elements
+      if (e.target.closest('.option-btn, .accordion-header, .continue-btn')) return;
+      handleDialogueClick();
+    });
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Touch support for mobile
+    let touchStartY = 0;
+    document.getElementById('game').addEventListener('touchstart', (e) => {
+      touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+    document.getElementById('game').addEventListener('touchend', (e) => {
+      const touchEndY = e.changedTouches[0].clientY;
+      if (Math.abs(touchEndY - touchStartY) < 20) {
+        handleDialogueClick();
+      }
+    });
+
+    // Start
+    init();
+  </script>
+</body>
+</html>
