@@ -757,6 +757,10 @@
       <div class="feedback-desc" id="feedbackModalDesc"></div>
       <button class="feedback-btn" id="feedbackModalBtn">知道了</button>
     </div>
+  <!-- Background Music -->
+    <audio id="bgMusic" src="背景音.mp3" loop preload="auto"></audio>
+    <!-- Click Sound Effect -->
+    <audio id="clickSound" src="点击音效.flac" preload="auto"></audio>
   </div>
 
   <script>
@@ -1007,6 +1011,8 @@ const summaryCard = document.getElementById('summaryCard');
       const feedbackModalTitle = document.getElementById('feedbackModalTitle');
       const feedbackModalDesc = document.getElementById('feedbackModalDesc');
       const feedbackModalBtn = document.getElementById('feedbackModalBtn');
+      const bgMusic = document.getElementById('bgMusic');
+      const clickSound = document.getElementById('clickSound');
 
     // ==================== UTILITIES ====================
     function getBgKey(scene) {
@@ -1039,6 +1045,19 @@ const summaryCard = document.getElementById('summaryCard');
       if (!node) return Promise.resolve();
       const urls = [getBgUrl(node.scene), PORTRAIT_MAP[node.id]].filter(Boolean);
       return Promise.all(urls.map(preloadImage));
+    }
+
+    // ==================== AUDIO ====================
+    function startBgMusic() {
+      bgMusic.volume = 0.3;
+      bgMusic.play().catch(() => {
+        // Autoplay blocked, will retry on user interaction
+      });
+    }
+
+    function playClickSound() {
+      clickSound.currentTime = 0;
+      clickSound.play().catch(() => {});
     }
 
     function setBackground(url, instant = false) {
@@ -1250,6 +1269,7 @@ const summaryCard = document.getElementById('summaryCard');
         submitBtn.style.padding = '12px 40px';
         submitBtn.style.opacity = '0.5';
         submitBtn.addEventListener('click', () => {
+          playClickSound();
           handleMultiSelectSubmit(node, Array.from(selectedSet), options);
         });
         
@@ -1265,7 +1285,10 @@ const summaryCard = document.getElementById('summaryCard');
           btn.textContent = opt;
           btn.dataset.index = idx;
           btn.dataset.fullText = opt;
-          btn.addEventListener('click', () => handleOptionClick(node, idx, opt));
+          btn.addEventListener('click', () => {
+          playClickSound();
+          handleOptionClick(node, idx, opt);
+        });
           optionsContainer.appendChild(btn);
         });
       }
@@ -1376,6 +1399,7 @@ const summaryCard = document.getElementById('summaryCard');
       feedbackModal.classList.add('visible');
 
       feedbackModalBtn.onclick = () => {
+        playClickSound();
         feedbackModal.classList.remove('visible');
         // After modal closes, show next step text in dialogue box
         if (feedbackStep === 1) {
@@ -1514,13 +1538,17 @@ const summaryCard = document.getElementById('summaryCard');
           </div>
         `;
         const header = div.querySelector('.accordion-header');
-        header.addEventListener('click', () => toggleAccordion(div));
+        header.addEventListener('click', () => {
+          playClickSound();
+          toggleAccordion(div);
+        });
         accordionList.appendChild(div);
       });
 
       knowledgeCard.classList.add('visible');
 
       knowledgeContinue.onclick = () => {
+        playClickSound();
         knowledgeCard.classList.remove('visible');
         goToNextNode(NODES[currentNodeIndex]);
       };
@@ -1543,6 +1571,7 @@ const summaryCard = document.getElementById('summaryCard');
       summaryCard.classList.add('visible');
 
       summaryContinue.onclick = () => {
+        playClickSound();
         summaryCard.classList.remove('visible');
         goToNextNode(NODES[currentNodeIndex]);
       };
@@ -1642,12 +1671,16 @@ const summaryCard = document.getElementById('summaryCard');
       await preloadNodeImages(0);
       loading.classList.add('hidden');
       showNode(0);
+      // Start background music after first user interaction
+      document.addEventListener('click', startBgMusic, { once: true });
+      document.addEventListener('keydown', startBgMusic, { once: true });
     }
 
     // Click anywhere on game screen to advance (typical VN behavior)
     document.getElementById('game').addEventListener('click', (e) => {
       // Ignore clicks on interactive elements
-      if (e.target.closest('.option-btn, .accordion-header, .continue-btn')) return;
+      if (e.target.closest('.option-btn, .accordion-header, .continue-btn, .feedback-btn')) return;
+      playClickSound();
       handleDialogueClick();
     });
     document.addEventListener('keydown', handleKeyDown);
