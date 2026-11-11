@@ -757,6 +757,15 @@
       <div class="feedback-desc" id="feedbackModalDesc"></div>
       <button class="feedback-btn" id="feedbackModalBtn">知道了</button>
     </div>
+  <!-- Start Overlay -->
+    <div id="startOverlay" style="position: fixed; inset: 0; background: #0a0a0f; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; transition: opacity 0.5s ease;">
+      <h2 style="color: var(--accent); font-size: 28px; margin-bottom: 12px; letter-spacing: 0.08em;">网络疑病症</h2>
+      <p style="color: var(--text-secondary); font-size: 15px; margin-bottom: 32px;">周一：AI健康助手的边界</p>
+      <div style="width: 60px; height: 2px; background: var(--accent); margin: 0 auto 32px;"></div>
+      <button id="startBtn" style="padding: 14px 48px; background: linear-gradient(135deg, var(--accent), #d4a850); border: none; border-radius: 50px; color: #1a1510; font-size: 16px; font-weight: 600; cursor: pointer; box-shadow: 0 6px 20px rgba(232, 197, 109, 0.3);">点击开始</button>
+      <p style="color: var(--text-secondary); font-size: 12px; margin-top: 16px; opacity: 0.6;">点击将启动背景音乐并进入游戏</p>
+    </div>
+
   <!-- Background Music -->
     <audio id="bgMusic" src="背景音.mp3" loop preload="auto"></audio>
     <!-- Click Sound Effect -->
@@ -1670,10 +1679,19 @@ const summaryCard = document.getElementById('summaryCard');
     async function init() {
       await preloadNodeImages(0);
       loading.classList.add('hidden');
-      showNode(0);
-      // Start background music after first user interaction
-      document.addEventListener('click', startBgMusic, { once: true });
-      document.addEventListener('keydown', startBgMusic, { once: true });
+
+      const startOverlay = document.getElementById('startOverlay');
+      const startBtn = document.getElementById('startBtn');
+
+      startBtn.addEventListener('click', () => {
+        playClickSound();
+        startBgMusic();
+        startOverlay.style.opacity = '0';
+        setTimeout(() => {
+          startOverlay.style.display = 'none';
+          showNode(0);
+        }, 500);
+      });
     }
 
     // Click anywhere on game screen to advance (typical VN behavior)
