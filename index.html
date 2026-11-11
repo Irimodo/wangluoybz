@@ -1057,16 +1057,57 @@ const summaryCard = document.getElementById('summaryCard');
     }
 
     // ==================== AUDIO ====================
+    let audioContext = null;
+    let clickSoundBuffer = null;
+
+    function initAudioContext() {
+      if (audioContext) return;
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        audioContext = new AudioContext();
+      }
+    }
+
+    async function preloadClickSound() {
+      initAudioContext();
+      if (!audioContext) return;
+      try {
+        const response = await fetch('点击音效.flac');
+        const arrayBuffer = await response.arrayBuffer();
+        clickSoundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+      } catch (e) {
+        // Fallback to HTML audio element
+        clickSoundBuffer = null;
+      }
+    }
+
+    function playClickSound() {
+      // Use Web Audio API for zero-latency playback if available
+      if (audioContext && clickSoundBuffer) {
+        const source = audioContext.createBufferSource();
+        source.buffer = clickSoundBuffer;
+        const gainNode = audioContext.createGain();
+        gainNode.gain.value = 0.5;
+        source.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        source.start(0);
+        return;
+      }
+      // Fallback to HTML audio element
+      clickSound.currentTime = 0;
+      clickSound.play().catch(() => {});
+    }
+
     function startBgMusic() {
+      initAudioContext();
+      // Resume audio context on user gesture (required by autoplay policy)
+      if (audioContext && audioContext.state === 'suspended') {
+        audioContext.resume();
+      }
       bgMusic.volume = 0.3;
       bgMusic.play().catch(() => {
         // Autoplay blocked, will retry on user interaction
       });
-    }
-
-    function playClickSound() {
-      clickSound.currentTime = 0;
-      clickSound.play().catch(() => {});
     }
 
     function setBackground(url, instant = false) {
@@ -1679,6 +1720,9 @@ const summaryCard = document.getElementById('summaryCard');
     async function init() {
       await preloadNodeImages(0);
       loading.classList.add('hidden');
+
+      // Preload click sound for zero-latency playback
+      preloadClickSound();
 
       const startOverlay = document.getElementById('startOverlay');
       const startBtn = document.getElementById('startBtn');
