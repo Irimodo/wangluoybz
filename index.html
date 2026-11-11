@@ -423,6 +423,120 @@
       outline-offset: 3px;
     }
 
+    /* Feedback Modal - prominent right/wrong popup */
+    .feedback-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      width: 85%;
+      max-width: 480px;
+      background: rgba(18, 18, 28, 0.98);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border: 2px solid var(--dialogue-border);
+      border-radius: 24px;
+      padding: 48px 40px;
+      text-align: center;
+      z-index: 60;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 30px 80px rgba(0,0,0,0.7);
+    }
+
+    .feedback-modal.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .feedback-modal .feedback-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: iconPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
+    }
+
+    .feedback-modal .feedback-icon svg {
+      width: 48px;
+      height: 48px;
+    }
+
+    .feedback-modal.correct .feedback-icon {
+      background: linear-gradient(135deg, rgba(74, 222, 128, 0.25), rgba(34, 80, 50, 0.4));
+      box-shadow: 0 0 40px rgba(74, 222, 128, 0.3);
+    }
+
+    .feedback-modal.correct .feedback-icon svg {
+      color: #4ade80;
+    }
+
+    .feedback-modal.incorrect .feedback-icon {
+      background: linear-gradient(135deg, rgba(248, 113, 113, 0.25), rgba(80, 34, 34, 0.4));
+      box-shadow: 0 0 40px rgba(248, 113, 113, 0.3);
+    }
+
+    .feedback-modal.incorrect .feedback-icon svg {
+      color: #f87171;
+    }
+
+    .feedback-modal .feedback-title {
+      font-size: 28px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: 0.04em;
+    }
+
+    .feedback-modal.correct .feedback-title {
+      color: #4ade80;
+    }
+
+    .feedback-modal.incorrect .feedback-title {
+      color: #f87171;
+    }
+
+    .feedback-modal .feedback-desc {
+      font-size: 16px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      margin-bottom: 28px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .feedback-modal .feedback-btn {
+      padding: 14px 48px;
+      background: linear-gradient(135deg, var(--accent), #d4a850);
+      border: none;
+      border-radius: 50px;
+      color: #1a1510;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 6px 20px rgba(232, 197, 109, 0.3);
+    }
+
+    .feedback-modal .feedback-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(232, 197, 109, 0.45);
+    }
+
+    .feedback-modal .feedback-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    @keyframes iconPop {
+      0% { transform: scale(0); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
     /* Summary Card (W1-09) */
     .summary-card {
       position: absolute;
@@ -632,6 +746,16 @@
       <div class="summary-continue">
         <button class="continue-btn" id="summaryContinue">下一关</button>
       </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="feedback-modal" id="feedbackModal">
+      <div class="feedback-icon">
+        <svg id="feedbackModalIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></svg>
+      </div>
+      <div class="feedback-title" id="feedbackModalTitle"></div>
+      <div class="feedback-desc" id="feedbackModalDesc"></div>
+      <button class="feedback-btn" id="feedbackModalBtn">知道了</button>
     </div>
   </div>
 
@@ -874,10 +998,15 @@
     const knowledgeCard = document.getElementById('knowledgeCard');
     const accordionList = document.getElementById('accordionList');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
-    const summaryCard = document.getElementById('summaryCard');
-    const summaryText = document.getElementById('summaryText');
-    const summaryContinue = document.getElementById('summaryContinue');
-    const loading = document.getElementById('loading');
+const summaryCard = document.getElementById('summaryCard');
+      const summaryText = document.getElementById('summaryText');
+      const summaryContinue = document.getElementById('summaryContinue');
+      const loading = document.getElementById('loading');
+      const feedbackModal = document.getElementById('feedbackModal');
+      const feedbackModalIcon = document.getElementById('feedbackModalIcon');
+      const feedbackModalTitle = document.getElementById('feedbackModalTitle');
+      const feedbackModalDesc = document.getElementById('feedbackModalDesc');
+      const feedbackModalBtn = document.getElementById('feedbackModalBtn');
 
     // ==================== UTILITIES ====================
     function getBgKey(scene) {
@@ -1188,23 +1317,90 @@
       feedbackNodeId = node.id;
       feedbackIsCorrect = isCorrect;
       feedbackStep = 1;
-      
-      let feedbackText = '';
-      
+
+      let title = '';
+      let desc = '';
+
       if (node.id === 'W1-08') {
         if (isCorrect) {
-          feedbackText = '对：先看出处，再决定信不信。';
+          title = '回答正确！';
+          desc = '对：先看出处，再决定信不信。';
         } else {
-          feedbackText = '错：跟着走，是放弃判断；再问一遍 AI，只是换个说法巩固它的结论。';
+          title = '回答错误';
+          desc = '错：跟着走，是放弃判断；再问一遍 AI，只是换个说法巩固它的结论。';
         }
+      } else {
+        title = isCorrect ? '回答正确！' : '回答错误';
+        desc = node.feedback_explanation || '';
       }
-      
-      waitingForClick = false;
-      dialogueHint.style.display = 'none';
-      typeText(dialogueText, feedbackText, 22, () => {
-        waitingForClick = true;
-        dialogueHint.style.display = 'flex';
-      });
+
+      showFeedbackModal(isCorrect, title, desc);
+    }
+
+    function showMultiSelectFeedback(node, isCorrect) {
+      feedbackNodeId = node.id;
+      feedbackIsCorrect = isCorrect;
+      feedbackStep = 1;
+
+      let title = '';
+      let desc = '';
+
+      if (node.id === 'W1-05') {
+        if (isCorrect) {
+          title = '回答正确！';
+          desc = '查体、地方指引、担责，它都做不到。';
+        } else {
+          title = '回答错误';
+          desc = '它最擅长的恰恰是把话说通顺——通顺不等于可靠。';
+        }
+      } else {
+        title = isCorrect ? '回答正确！' : '回答错误';
+        desc = node.feedback_explanation || '';
+      }
+
+      showFeedbackModal(isCorrect, title, desc);
+    }
+
+    function showFeedbackModal(isCorrect, title, desc) {
+      feedbackModal.classList.remove('correct', 'incorrect');
+      feedbackModal.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+      if (isCorrect) {
+        feedbackModalIcon.innerHTML = '<polyline points="20 6 9 17 4 12"/>';
+      } else {
+        feedbackModalIcon.innerHTML = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
+      }
+
+      feedbackModalTitle.textContent = title;
+      feedbackModalDesc.textContent = desc;
+      feedbackModal.classList.add('visible');
+
+      feedbackModalBtn.onclick = () => {
+        feedbackModal.classList.remove('visible');
+        // After modal closes, show next step text in dialogue box
+        if (feedbackStep === 1) {
+          feedbackStep = 2;
+          waitingForClick = false;
+          dialogueHint.style.display = 'none';
+          let nextStepText = '';
+          if (feedbackNodeId === 'W1-08') {
+            nextStepText = '下一步：养成"先看出处"的默认动作。';
+          } else if (feedbackNodeId === 'W1-05') {
+            nextStepText = '下一步：记住这三个边界。';
+          }
+          if (nextStepText) {
+            typeText(dialogueText, nextStepText, 22, () => {
+              waitingForClick = true;
+              dialogueHint.style.display = 'flex';
+            });
+          } else {
+            // No next step, proceed directly
+            feedbackStep = 0;
+            feedbackNodeId = null;
+            goToNextNode(NODES[currentNodeIndex]);
+          }
+        }
+      };
     }
 
     function handleMultiSelectSubmit(node, selectedIndices, options) {
@@ -1254,23 +1450,24 @@
       feedbackNodeId = node.id;
       feedbackIsCorrect = isCorrect;
       feedbackStep = 1;
-      
-      let feedbackText = '';
-      
+
+      let title = '';
+      let desc = '';
+
       if (node.id === 'W1-05') {
         if (isCorrect) {
-          feedbackText = '查体、地方指引、担责，它都做不到。';
+          title = '回答正确！';
+          desc = '查体、地方指引、担责，它都做不到。';
         } else {
-          feedbackText = '它最擅长的恰恰是把话说通顺——通顺不等于可靠。';
+          title = '回答错误';
+          desc = '它最擅长的恰恰是把话说通顺——通顺不等于可靠。';
         }
+      } else {
+        title = isCorrect ? '回答正确！' : '回答错误';
+        desc = node.feedback_explanation || '';
       }
-      
-      waitingForClick = false;
-      dialogueHint.style.display = 'none';
-      typeText(dialogueText, feedbackText, 22, () => {
-        waitingForClick = true;
-        dialogueHint.style.display = 'flex';
-      });
+
+      showFeedbackModal(isCorrect, title, desc);
     }
 
     function showFeedback(node, isCorrect, selectedLetter) {
@@ -1355,6 +1552,7 @@
       optionsContainer.classList.remove('visible');
       knowledgeCard.classList.remove('visible');
       summaryCard.classList.remove('visible');
+      feedbackModal.classList.remove('visible');
       dialogueBox.classList.remove('hidden');
     }
 
@@ -1406,27 +1604,8 @@
         return;
       }
       
-      // Handle two-step feedback flow
-      if (feedbackStep === 1) {
-        // Show "下一步" text
-        feedbackStep = 2;
-        waitingForClick = false;
-        dialogueHint.style.display = 'none';
-        let nextStepText = '';
-        if (feedbackNodeId === 'W1-08') {
-          nextStepText = '下一步：养成“先看出处”的默认动作。';
-        } else if (feedbackNodeId === 'W1-05') {
-          nextStepText = '下一步：记住这三个边界。';
-        }
-        typeText(dialogueText, nextStepText, 22, () => {
-          waitingForClick = true;
-          dialogueHint.style.display = 'flex';
-        });
-        return;
-      }
-      
+      // Handle two-step feedback flow: step 2 = next-step text in dialogue box
       if (feedbackStep === 2) {
-        // Proceed to next node
         feedbackStep = 0;
         feedbackNodeId = null;
         waitingForClick = false;
