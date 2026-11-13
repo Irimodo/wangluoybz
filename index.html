@@ -698,6 +698,134 @@
         transition-duration: 0.01ms !important;
       }
     }
+
+    /* Video Card (W1-04 -> W1-05 transition) */
+    .video-card {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.95);
+      width: 90%;
+      max-width: 800px;
+      max-height: 90vh;
+      background: rgba(18, 18, 28, 0.95);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid var(--dialogue-border);
+      border-radius: 20px;
+      box-shadow: 0 30px 80px rgba(0,0,0,0.6),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+      overflow: hidden;
+      z-index: 40;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .video-card.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .video-header {
+      padding: 28px 32px;
+      border-bottom: 1px solid var(--dialogue-border);
+      background: linear-gradient(180deg, rgba(232, 197, 109, 0.08), transparent);
+      text-align: center;
+    }
+
+    .video-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.02em;
+      margin-bottom: 6px;
+    }
+
+    .video-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .video-container {
+      flex: 1;
+      overflow: hidden;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-footer {
+      padding: 20px 32px;
+      border-top: 1px solid var(--dialogue-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .video-skip-btn {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--btn-border);
+      border-radius: 50px;
+      color: var(--text-secondary);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      opacity: 0.7;
+    }
+
+    .video-skip-btn:hover {
+      opacity: 1;
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(232, 197, 109, 0.05);
+    }
+
+    .video-skip-btn:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    @media (max-width: 768px) {
+      .video-card {
+        width: 95%;
+        max-height: 95vh;
+      }
+
+      .video-header {
+        padding: 20px 20px;
+      }
+
+      .video-title {
+        font-size: 18px;
+      }
+
+      .video-container {
+        padding: 16px;
+      }
+
+      .video-footer {
+        padding: 16px 20px;
+        flex-direction: column;
+      }
+
+      .video-skip-btn {
+        order: 2;
+      }
+
+      .continue-btn {
+        order: 1;
+        width: 100%;
+      }
+    }
   </style>
 </head>
 <body>
@@ -756,6 +884,21 @@
       <div class="feedback-title" id="feedbackModalTitle"></div>
       <div class="feedback-desc" id="feedbackModalDesc"></div>
       <button class="feedback-btn" id="feedbackModalBtn">知道了</button>
+    </div>
+
+    <!-- Video Card (W1-04 -> W1-05 transition) -->
+    <div class="video-card" id="videoCard">
+      <div class="video-header">
+        <div class="video-title">科普短片：AI 是怎么回答你的？</div>
+        <div class="video-subtitle">约 1 分半，了解 AI 生成回答的本质</div>
+      </div>
+      <div class="video-container">
+        <video id="eduVideo" controls playsinline preload="metadata" style="width:100%; border-radius:12px; max-height:60vh; background:#000;"></video>
+      </div>
+      <div class="video-footer">
+        <button class="video-skip-btn" id="videoSkipBtn">跳过视频</button>
+        <button class="continue-btn" id="videoContinueBtn">看完了，进入提问 →</button>
+      </div>
     </div>
   <!-- Start Overlay -->
     <div id="startOverlay" style="position: fixed; inset: 0; background: #0a0a0f; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 200; transition: opacity 0.5s ease;">
@@ -998,8 +1141,9 @@
     let currentTypingIndex = 0;
     let waitingForClick = false;
     let isOptionsMode = false;
-    let isKnowledgeCardMode = false;
+let isKnowledgeCardMode = false;
     let isSummaryMode = false;
+    let isVideoMode = false;
     let selectedOption = null;
     const preloadedImages = new Map();
     // Two-step feedback state
@@ -1019,7 +1163,7 @@
     const knowledgeCard = document.getElementById('knowledgeCard');
     const accordionList = document.getElementById('accordionList');
     const knowledgeContinue = document.getElementById('knowledgeContinue');
-const summaryCard = document.getElementById('summaryCard');
+    const summaryCard = document.getElementById('summaryCard');
       const summaryText = document.getElementById('summaryText');
       const summaryContinue = document.getElementById('summaryContinue');
       const loading = document.getElementById('loading');
@@ -1028,6 +1172,10 @@ const summaryCard = document.getElementById('summaryCard');
       const feedbackModalTitle = document.getElementById('feedbackModalTitle');
       const feedbackModalDesc = document.getElementById('feedbackModalDesc');
       const feedbackModalBtn = document.getElementById('feedbackModalBtn');
+      const videoCard = document.getElementById('videoCard');
+      const eduVideo = document.getElementById('eduVideo');
+      const videoContinueBtn = document.getElementById('videoContinueBtn');
+      const videoSkipBtn = document.getElementById('videoSkipBtn');
       const bgMusic = document.getElementById('bgMusic');
       const clickSound = document.getElementById('clickSound');
 
@@ -1273,6 +1421,11 @@ const summaryCard = document.getElementById('summaryCard');
       const nextNodeIndex = NODES.findIndex(item => item.id === node.next_node);
       if (nextNodeIndex >= 0) preloadNodeImages(nextNodeIndex);
 
+      // Preload video when entering W1-02 (silent background buffering)
+      if (node.id === 'W1-02') {
+        preloadVideo();
+      }
+
       // Reset UI states
       hideAllSpecialUI();
       dialogueBox.classList.remove('hidden');
@@ -1280,6 +1433,7 @@ const summaryCard = document.getElementById('summaryCard');
       isOptionsMode = false;
       isKnowledgeCardMode = false;
       isSummaryMode = false;
+      isVideoMode = false;
       selectedOption = null;
       // Reset feedback state
       feedbackStep = 0;
@@ -1313,6 +1467,17 @@ const summaryCard = document.getElementById('summaryCard');
       if (node.id === 'W1-09') {
         await showSummaryCard(node.dialogue);
         playVoice(node.id); // W1-09
+        return;
+      }
+
+      // Handle W1-04: show video card instead of going to W1-05
+      if (node.id === 'W1-04') {
+        // Override next_node to go to video card first
+        await typeText(dialogueText, node.dialogue || '', 25, () => {
+          waitingForClick = true;
+          dialogueHint.style.display = 'flex';
+          playVoice(node.id);
+        });
         return;
       }
 
@@ -1718,10 +1883,75 @@ const summaryCard = document.getElementById('summaryCard');
       };
     }
 
+    // ==================== VIDEO CARD (W1-04 -> W1-05) ====================
+    function preloadVideo() {
+      if (eduVideo && !eduVideo.src) {
+        eduVideo.src = '科普短片.mp4';
+        eduVideo.preload = 'auto';
+        eduVideo.load();
+      }
+    }
+
+    async function showVideoCard() {
+      isVideoMode = true;
+      dialogueBox.classList.add('hidden');
+      portrait.classList.remove('visible');
+
+      // Ensure video source is set
+      if (!eduVideo.src) {
+        eduVideo.src = '科普短片.mp4';
+        eduVideo.load();
+      }
+
+      videoCard.classList.add('visible');
+
+      // Video event handlers
+      eduVideo.onplay = () => {
+        bgMusic.volume = 0;
+        voicePlayer.pause();
+        voicePlayer.currentTime = 0;
+      };
+
+      eduVideo.onpause = () => {
+        bgMusic.volume = 0.3;
+      };
+
+      eduVideo.onended = () => {
+        bgMusic.volume = 0.3;
+        // Auto-advance after video ends (optional, user can also click continue)
+      };
+
+      // Continue button: stop video, hide card, go to W1-05
+      videoContinueBtn.onclick = () => {
+        playClickSound();
+        eduVideo.pause();
+        eduVideo.currentTime = 0;
+        videoCard.classList.remove('visible');
+        // Find W1-05 index and show it
+        const w105Index = NODES.findIndex(n => n.id === 'W1-05');
+        if (w105Index !== -1) {
+          showNode(w105Index);
+        }
+      };
+
+      // Skip button: same as continue but for debugging
+      videoSkipBtn.onclick = () => {
+        playClickSound();
+        eduVideo.pause();
+        eduVideo.currentTime = 0;
+        videoCard.classList.remove('visible');
+        const w105Index = NODES.findIndex(n => n.id === 'W1-05');
+        if (w105Index !== -1) {
+          showNode(w105Index);
+        }
+      };
+    }
+
     function hideAllSpecialUI() {
       optionsContainer.classList.remove('visible');
       knowledgeCard.classList.remove('visible');
       summaryCard.classList.remove('visible');
+      videoCard.classList.remove('visible');
       feedbackModal.classList.remove('visible');
       dialogueBox.classList.remove('hidden');
     }
@@ -1784,7 +2014,15 @@ const summaryCard = document.getElementById('summaryCard');
         return;
       }
       
-      if (waitingForClick && !isOptionsMode && !isKnowledgeCardMode && !isSummaryMode) {
+      // Handle W1-04 -> Video Card transition
+      if (waitingForClick && !isOptionsMode && !isKnowledgeCardMode && !isSummaryMode && !isVideoMode) {
+        const currentNode = NODES[currentNodeIndex];
+        if (currentNode && currentNode.id === 'W1-04') {
+          waitingForClick = false;
+          dialogueHint.style.display = 'none';
+          showVideoCard();
+          return;
+        }
         waitingForClick = false;
         dialogueHint.style.display = 'none';
         goToNextNode(NODES[currentNodeIndex]);
@@ -1797,7 +2035,17 @@ const summaryCard = document.getElementById('summaryCard');
         handleDialogueClick();
       }
       if (e.key === 'Escape') {
-        if (isKnowledgeCardMode) {
+        if (isVideoMode) {
+          eduVideo.pause();
+          eduVideo.currentTime = 0;
+          videoCard.classList.remove('visible');
+          isVideoMode = false;
+          // Optionally go to W1-05 or stay on W1-04
+          const w105Index = NODES.findIndex(n => n.id === 'W1-05');
+          if (w105Index !== -1) {
+            showNode(w105Index);
+          }
+        } else if (isKnowledgeCardMode) {
           knowledgeCard.classList.remove('visible');
           goToNextNode(NODES[currentNodeIndex]);
         } else if (isSummaryMode) {
@@ -1832,7 +2080,7 @@ const summaryCard = document.getElementById('summaryCard');
     // Click anywhere on game screen to advance (typical VN behavior)
     document.getElementById('game').addEventListener('click', (e) => {
       // Ignore clicks on interactive elements
-      if (e.target.closest('.option-btn, .accordion-header, .continue-btn, .feedback-btn')) return;
+      if (e.target.closest('.option-btn, .accordion-header, .continue-btn, .feedback-btn, .video-skip-btn, #videoContinueBtn')) return;
       playClickSound();
       handleDialogueClick();
     });
